@@ -5,13 +5,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import socket
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from observal_collector import __version__
 from observal_collector.adapters import poll_device
-from observal_collector.cloud_client import CloudClient, get_local_ip, load_device_identity
+from observal_collector.cloud_client import CloudClient, get_local_ip
+from observal_collector.identity import load_device_identity
 from observal_collector.vault import Vault
 
 logging.basicConfig(
@@ -34,7 +35,7 @@ class CollectorAgent:
         self.ingest_token: str | None = self.secrets.get("ingest_token")
         self.config: dict = self.secrets.get("config", {})
         self.poll_interval = 60
-        self.send_interval = 60
+        self._last_poll_at = 0.0
 
     async def run(self) -> None:
         log.info("Observal collector v%s — hardware_id=%s", __version__, self.hardware_id)
@@ -57,7 +58,10 @@ class CollectorAgent:
             return
 
         if status == "revoked":
-            log.warning("Collector revoked")
+            log.warning("Collector revoked — stopping operations")
+            self.secrets = {}
+            self.ingest_token = None
+            self.collector_id = None
             return
 
         if poll_data.get("ingest_token"):
@@ -66,16 +70,23 @@ class CollectorAgent:
             self.secrets["ingest_token"] = self.ingest_token
             self.secrets["collector_id"] = self.collector_id
             self.vault.save_secrets(self.secrets)
-            log.info("Ingest token received")
+            log.info("Ingest token received/rotated")
 
         if poll_data.get("config"):
             self.config = poll_data["config"]
             self.secrets["config"] = self.config
             self.vault.save_secrets(self.secrets)
-            self.poll_interval = self.config.get("poll_interval_sec", 60)
+            self.poll_interval = max(15, int(self.config.get("poll_interval_sec", 60)))
 
         if not self.collector_id or not self.ingest_token:
             return
+
+        await self._flush_buffer()
+
+        now = time.monotonic()
+        if now - self._last_poll_at < self.poll_interval:
+            return
+        self._last_poll_at = now
 
         devices = self.config.get("devices", [])
         if not devices:
@@ -86,7 +97,18 @@ class CollectorAgent:
         heartbeats: list[dict] = []
 
         for device in devices:
-            result = await poll_device(device)
+            try:
+                result = await poll_device(device)
+            except Exception as exc:
+                log.warning("Poll failed for %s: %s", device.get("name"), exc)
+                heartbeats.append(
+                    {
+                        "device_id": device["id"],
+                        "status": "offline",
+                    }
+                )
+                continue
+
             heartbeats.append(
                 {
                     "device_id": device["id"],
@@ -107,8 +129,25 @@ class CollectorAgent:
             batch_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
             self.vault.save_buffer_batch(batch_id, payload)
 
+    async def _flush_buffer(self) -> None:
+        if not self.collector_id or not self.ingest_token:
+            return
+
+        for batch_path in self.vault.list_buffer_batches():
+            try:
+                payload = self.vault.load_buffer_batch(batch_path)
+                await self.cloud.ingest(self.collector_id, self.ingest_token, payload)
+                self.vault.delete_buffer_batch(batch_path)
+                log.info("Flushed buffered batch %s", batch_path.name)
+            except Exception as exc:
+                log.warning("Buffer flush failed for %s: %s", batch_path.name, exc)
+                break
+
 
 def main() -> None:
+    if not os.environ.get("SUPABASE_URL"):
+        log.error("SUPABASE_URL not set")
+        raise SystemExit(1)
     agent = CollectorAgent()
     asyncio.run(agent.run())
 

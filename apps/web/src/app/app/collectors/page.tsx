@@ -36,9 +36,10 @@ export default async function CollectorsPage() {
       ) : (
         <div className="grid gap-4">
           {collectors.map((c) => (
-            <div
+            <Link
               key={c.id}
-              className="rounded-xl border border-card bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              href={`/app/collectors/${c.id}`}
+              className="rounded-xl border border-card bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-600/40 transition-colors"
             >
               <div>
                 <p className="font-semibold">{c.name ?? "Observal Collector"}</p>
@@ -58,7 +59,7 @@ export default async function CollectorsPage() {
                   {c.status}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

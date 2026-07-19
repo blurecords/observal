@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import httpx
@@ -69,31 +68,3 @@ def get_local_ip() -> str | None:
         return ip
     except OSError:
         return None
-
-
-def load_device_identity(data_dir: str) -> tuple[str, bytes]:
-    """Load or create hardware_id and device_secret."""
-    from pathlib import Path
-    import uuid
-
-    identity_path = Path(data_dir) / "identity.json"
-    if identity_path.exists():
-        import json
-
-        data = json.loads(identity_path.read_text())
-        return data["hardware_id"], bytes.fromhex(data["device_secret"])
-
-    hardware_id = str(uuid.uuid4())
-    device_secret = os.urandom(32)
-    import json
-
-    identity_path.parent.mkdir(parents=True, exist_ok=True)
-    identity_path.write_text(
-        json.dumps(
-            {
-                "hardware_id": hardware_id,
-                "device_secret": device_secret.hex(),
-            }
-        )
-    )
-    return hardware_id, device_secret

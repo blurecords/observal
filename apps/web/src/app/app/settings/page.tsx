@@ -1,3 +1,5 @@
+import { AlertRulesSettings, NotificationSettings } from "@/components/app/settings-forms";
+import { OpeningHoursSettings } from "@/components/app/opening-hours-form";
 import { createClient } from "@/lib/supabase/server";
 
 type OrgRow = { name: string; timezone: string };
@@ -21,10 +23,10 @@ export default async function SettingsPage() {
   const org = getOrg(profile?.organizations as OrgRow | OrgRow[] | null);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-8 max-w-2xl">
       <div>
         <h2 className="text-2xl font-bold">Ajustes</h2>
-        <p className="text-muted mt-1">Configuración de tu organización.</p>
+        <p className="text-muted mt-1">Configuración de tu organización y alertas.</p>
       </div>
 
       <div className="rounded-xl border border-card bg-card p-6 space-y-4">
@@ -42,9 +44,9 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <p className="text-sm text-muted">
-        Configuración avanzada de horarios de apertura y notificaciones en Fase 9.
-      </p>
+      <NotificationSettings />
+      <OpeningHoursSettings />
+      <AlertRulesSettings />
     </div>
   );
 }

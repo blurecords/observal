@@ -54,6 +54,13 @@ Open [http://localhost:3000](http://localhost:3000)
 | `collectors-poll` | Pi fetch config + token |
 | `collectors-claim` | User activates Pi with pairing code |
 | `collector-ingest` | Pi sends metrics |
+| `check-collectors` | Cron: detect offline collectors (every 5 min) |
+
+### Alert email (Resend)
+
+1. Create account at [resend.com](https://resend.com)
+2. Add secrets in Supabase: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`
+3. Configure notification email in `/app/settings`
 
 ## Register a test Pi
 
@@ -101,7 +108,7 @@ observal-collector
 
 - [x] **Sprint 1** — Monorepo, schema, landing, auth, activation, collector base
 - [x] **Sprint 2** — Device wizard, venues/rooms, SNMP adapter, ECharts dashboard
-- [ ] **Sprint 3** — Alert rules, opening hours, email notifications
+- [x] **Sprint 3** — Alert rules, opening hours, email notifications, CSV import
 - [ ] **Sprint 4** — Production hardening, factory flash, beta museum
 
 ## License

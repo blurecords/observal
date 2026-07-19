@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { evaluateIngestAlerts } from "../_shared/alert-engine.ts";
 import { corsHeaders, hashToken, jsonResponse } from "../_shared/cors.ts";
 
 interface IngestBody {
@@ -61,6 +62,15 @@ Deno.serve(async (req) => {
       .update({ last_seen_at: new Date().toISOString(), status: "active" })
       .eq("id", collector.id);
 
+    if (collector.organization_id) {
+      await supabase
+        .from("alerts")
+        .update({ resolved: true, resolved_at: new Date().toISOString() })
+        .eq("collector_id", collector.id)
+        .eq("rule_key", "collector_offline")
+        .eq("resolved", false);
+    }
+
     if (body.metrics?.length) {
       const rows = body.metrics.map((m) => ({
         organization_id: collector.organization_id,
@@ -97,6 +107,20 @@ Deno.serve(async (req) => {
         devices_polled: body.heartbeats.length,
         recorded_at: new Date().toISOString(),
       });
+    }
+
+    if (collector.organization_id && (body.heartbeats?.length || body.metrics?.length)) {
+      await evaluateIngestAlerts(
+        supabase,
+        collector.id,
+        collector.organization_id,
+        body.heartbeats ?? [],
+        (body.metrics ?? []).map((m) => ({
+          device_id: m.device_id,
+          name: m.name,
+          value: m.value,
+        })),
+      );
     }
 
     return jsonResponse({ ok: true, accepted: body.metrics?.length ?? 0 });
