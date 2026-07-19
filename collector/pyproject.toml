@@ -1,0 +1,20 @@
+[project]
+name = "observal-collector"
+version = "0.1.0"
+description = "Observal AV collector agent for Raspberry Pi"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27.0",
+    "cryptography>=42.0.0",
+]
+
+[project.scripts]
+observal-collector = "observal_collector.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["observal_collector*"]

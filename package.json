@@ -1,0 +1,18 @@
+{
+  "name": "observal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Observal AV — remote monitoring for museums and AV installations",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "lint": "npm run lint --workspace=web"
+  },
+  "devDependencies": {
+    "supabase": "^2.109.1"
+  }
+}
