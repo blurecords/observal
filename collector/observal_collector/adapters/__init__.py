@@ -5,28 +5,10 @@ from __future__ import annotations
 import asyncio
 import socket
 import subprocess
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-
-@dataclass
-class PollResult:
-    status: str
-    metrics: list[dict[str, Any]] = field(default_factory=list)
-    latency_ms: int | None = None
-    error: str | None = None
-
-
-class BaseAdapter(ABC):
-    profile: str = "base"
-
-    @abstractmethod
-    async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
-        ...
-
-
+from observal_collector.adapters.base import BaseAdapter, PollResult
 class PingAdapter(BaseAdapter):
     profile = "ping"
 
@@ -65,7 +47,13 @@ class TcpHealthAdapter(BaseAdapter):
     profile = "tcp_health"
 
     async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
-        port = int(credentials.get("port", device.get("metadata", {}).get("port", 80)))
+        port = int(
+            credentials.get("tcp_port")
+            or credentials.get("port")
+            or device.get("metadata", {}).get("tcp_port")
+            or device.get("metadata", {}).get("port")
+            or 80
+        )
         loop = asyncio.get_event_loop()
         ok = await loop.run_in_executor(None, self._check_port, host, port)
         status = "online" if ok else "offline"
@@ -96,7 +84,7 @@ class PjlinkAdapter(BaseAdapter):
     profile = "pjlink_class1"
 
     async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
-        password = credentials.get("password", "")
+        password = credentials.get("pjlink_password") or credentials.get("password", "")
         loop = asyncio.get_event_loop()
         try:
             data = await loop.run_in_executor(
@@ -160,19 +148,29 @@ class PjlinkAdapter(BaseAdapter):
             return result
 
 
+from observal_collector.adapters.snmp import SnmpAdapter, SnmpQscAdapter
+
 ADAPTERS: dict[str, BaseAdapter] = {
     "ping": PingAdapter(),
     "tcp_health": TcpHealthAdapter(),
     "pjlink_class1": PjlinkAdapter(),
     "pjlink_class2": PjlinkAdapter(),
+    "snmp_generic": SnmpAdapter(),
+    "snmp_qsc": SnmpQscAdapter(),
 }
+
+
+def _device_credentials(device: dict, credentials: dict | None) -> dict:
+    merged = dict(device.get("metadata") or {})
+    merged.update(device.get("credentials") or {})
+    if credentials:
+        merged.update(credentials)
+    return merged
 
 
 async def poll_device(device: dict, credentials: dict | None = None) -> PollResult:
     profile = device.get("profile", "ping")
     adapter = ADAPTERS.get(profile, ADAPTERS["ping"])
-    return await adapter.poll(
-        device["host"],
-        device,
-        credentials or {},
-    )
+    creds = _device_credentials(device, credentials)
+    host = str(device["host"]).split("/")[0]
+    return await adapter.poll(host, device, creds)

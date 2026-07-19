@@ -82,7 +82,11 @@ observal-collector
 |---------|----------|-----------|
 | `ping` | ICMP | All |
 | `pjlink_class1` | PJLink TCP 4352 | Projectors |
-| `tcp_health` | TCP port | Generic AV |
+| `snmp_generic` | SNMP v2c (snmpget) | Matrices, DSP, generic AV |
+| `snmp_qsc` | SNMP v2c extended | QSC amplifiers |
+| `tcp_health` | TCP port | Processors, media players |
+
+**Pi requirement for SNMP:** `sudo apt install snmp`
 
 ## Deploy to observal.app
 
@@ -96,9 +100,9 @@ observal-collector
 ## Development phases
 
 - [x] **Sprint 1** — Monorepo, schema, landing, auth, activation, collector base
-- [ ] **Sprint 2** — Device wizard, SNMP adapter, room hierarchy UI
-- [ ] **Sprint 3** — ECharts dashboard, metrics explorer
-- [ ] **Sprint 4** — Alerts, opening hours, production deploy
+- [x] **Sprint 2** — Device wizard, venues/rooms, SNMP adapter, ECharts dashboard
+- [ ] **Sprint 3** — Alert rules, opening hours, email notifications
+- [ ] **Sprint 4** — Production hardening, factory flash, beta museum
 
 ## License
 

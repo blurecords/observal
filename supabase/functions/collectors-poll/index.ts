@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const { data: devices } = await supabase
       .from("av_devices")
       .select(
-        "id, name, host, device_type, profile, brand, model, room_id, critical, enabled",
+        "id, name, host, device_type, profile, brand, model, room_id, critical, enabled, metadata",
       )
       .eq("collector_id", collector.id)
       .eq("enabled", true);
@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
         model: d.model,
         room_id: d.room_id,
         critical: d.critical,
+        metadata: d.metadata ?? {},
       })),
       ...(configRow?.config_json ?? {}),
     };

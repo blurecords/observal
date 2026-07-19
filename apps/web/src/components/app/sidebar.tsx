@@ -3,6 +3,8 @@
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
+  BarChart3,
+  Building2,
   LayoutDashboard,
   Monitor,
   Radio,
@@ -14,8 +16,10 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/app", label: "Command Center", icon: LayoutDashboard },
+  { href: "/app/venues", label: "Salas y venues", icon: Building2 },
   { href: "/app/collectors", label: "Collectors", icon: Radio },
   { href: "/app/devices", label: "Equipos AV", icon: Server },
+  { href: "/app/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/app/alerts", label: "Alertas", icon: AlertTriangle },
   { href: "/app/settings", label: "Ajustes", icon: Settings },
 ];

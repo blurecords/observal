@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DashboardRoomBars } from "@/components/app/dashboard-charts";
+import { RoomOverviewCard } from "@/components/app/room-overview-card";
 import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Plus, Radio, Server } from "lucide-react";
 
@@ -12,8 +14,14 @@ export default async function DashboardPage() {
 
   const { data: devices } = await supabase
     .from("av_devices")
-    .select("id, last_status")
+    .select("id, last_status, room_id, critical")
     .eq("enabled", true);
+
+  const { data: rooms } = await supabase
+    .from("rooms")
+    .select("id, name, floor")
+    .order("name")
+    .limit(6);
 
   const { data: alerts } = await supabase
     .from("alerts")
@@ -25,6 +33,24 @@ export default async function DashboardPage() {
   const totalDevices = devices?.length ?? 0;
   const activeCollectors =
     collectors?.filter((c) => c.status === "active").length ?? 0;
+
+  const roomStats = (rooms ?? []).map((room) => {
+    const roomDevices = devices?.filter((d) => d.room_id === room.id) ?? [];
+    return {
+      id: room.id,
+      name: room.name,
+      floor: room.floor,
+      online: roomDevices.filter((d) => d.last_status === "online").length,
+      total: roomDevices.length,
+      criticalOffline: roomDevices.some(
+        (d) => d.critical && d.last_status !== "online",
+      ),
+    };
+  });
+
+  const roomBars = roomStats
+    .filter((r) => r.total > 0)
+    .map((r) => ({ name: r.name, online: r.online, total: r.total }));
 
   const stats = [
     {
@@ -88,6 +114,32 @@ export default async function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {roomStats.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Salas del museo</h3>
+            <Link href="/app/venues" className="text-sm text-blue-400 hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {roomStats.map((r) => (
+              <RoomOverviewCard
+                key={r.id}
+                id={r.id}
+                name={r.name}
+                floor={r.floor}
+                online={r.online}
+                total={r.total}
+                hasCriticalOffline={r.criticalOffline}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {roomBars.length > 0 && <DashboardRoomBars rooms={roomBars} />}
 
       {!!collectors?.length && (
         <div className="rounded-xl border border-card bg-card overflow-hidden">
