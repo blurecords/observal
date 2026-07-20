@@ -1,5 +1,6 @@
 "use client";
 
+import { saveOpeningHours } from "@/actions/settings";
 import { DAY_LABELS } from "@/lib/alert-rules";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -27,7 +28,6 @@ export function OpeningHoursSettings() {
   const supabase = createClient();
   const [venues, setVenues] = useState<VenueOption[]>([]);
   const [venueId, setVenueId] = useState("");
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [hours, setHours] = useState<HourRow[]>(DEFAULT_HOURS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,7 +67,6 @@ export function OpeningHoursSettings() {
         .select("organization_id")
         .single();
       if (!profile) return;
-      setOrgId(profile.organization_id);
 
       const { data: v } = await supabase
         .from("venues")
@@ -95,20 +94,11 @@ export function OpeningHoursSettings() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!orgId || !venueId) return;
+    if (!venueId) return;
     setSaving(true);
 
-    await supabase.from("opening_hours").delete().eq("venue_id", venueId);
-
-    await supabase.from("opening_hours").insert(
-      hours.map((h) => ({
-        organization_id: orgId,
-        venue_id: venueId,
-        day_of_week: h.day_of_week,
-        opens_at: h.opens_at,
-        closes_at: h.closes_at,
-      })),
-    );
+    const venueName = venues.find((v) => v.id === venueId)?.name ?? "Venue";
+    await saveOpeningHours(venueId, venueName, hours);
 
     setSaving(false);
     setSaved(true);

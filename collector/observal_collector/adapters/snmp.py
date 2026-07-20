@@ -70,6 +70,14 @@ class SnmpAdapter(BaseAdapter):
                 "ts": ts,
             }
         )
+        metrics.append(
+            {
+                "name": "device.reachable",
+                "value": True,
+                "status": "online",
+                "ts": ts,
+            }
+        )
 
         return PollResult(status="online", metrics=metrics)
 

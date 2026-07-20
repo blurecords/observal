@@ -72,6 +72,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 | `collectors-revoke` | Revoke stolen/lost Pi |
 | `collectors-rotate-token` | Rotate ingest token |
 | `purge-metrics` | Cron: delete old metrics by retention |
+| `send-sla-reports` | Cron: monthly SLA email reports |
 
 ## Documentation
 
@@ -94,6 +95,8 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 - [x] Sprint 6 — Extron SIS, device editing, PJLink Class 2, metrics/dashboard upgrades
 - [x] Sprint 7 — NovaStar HTTP, credential encryption, metrics retention, AV alert rules
 - [x] Sprint 8 — Team roles, invites, reports export, multi-collector UI, beta guide
+- [x] Sprint 9 — Invite emails, audit log, SLA reports, landing pricing
+- [x] Sprint 10 — SLA fix all profiles, webhooks, audit completeness, plan limits
 
 ## License
 

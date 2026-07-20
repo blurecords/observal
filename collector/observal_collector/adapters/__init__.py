@@ -66,7 +66,13 @@ class TcpHealthAdapter(BaseAdapter):
                     "status": status,
                     "ts": datetime.now(timezone.utc).isoformat(),
                     "labels": {"port": str(port)},
-                }
+                },
+                {
+                    "name": "device.reachable",
+                    "value": ok,
+                    "status": status,
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                },
             ],
         )
 
@@ -97,6 +103,12 @@ class PjlinkAdapter(BaseAdapter):
         status = "online" if data.get("power") != "offline" else "offline"
         ts = datetime.now(timezone.utc).isoformat()
         metrics = [
+            {
+                "name": "device.reachable",
+                "value": status == "online",
+                "status": status,
+                "ts": ts,
+            },
             {
                 "name": "projector.power",
                 "value": data.get("power", "unknown"),

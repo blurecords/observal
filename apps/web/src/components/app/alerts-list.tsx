@@ -1,10 +1,10 @@
 "use client";
 
+import { acknowledgeAlert, resolveAlert } from "@/actions/alerts";
 import { ALERT_RULES, type AlertRuleKey } from "@/lib/alert-rules";
-import { relationName } from "@/lib/supabase/helpers";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/components/app/role-context";
+import { relationName } from "@/lib/supabase/helpers";
 import { Check, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -28,7 +28,6 @@ const severityColors: Record<string, string> = {
 };
 
 export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
-  const supabase = createClient();
   const router = useRouter();
   const { canWrite } = useRole();
   const [filter, setFilter] = useState<"all" | "open" | "resolved">("open");
@@ -43,26 +42,13 @@ export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
     });
   }, [alerts, filter, severity]);
 
-  async function acknowledge(id: string) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    await supabase
-      .from("alerts")
-      .update({
-        acknowledged: true,
-        acknowledged_at: new Date().toISOString(),
-        acknowledged_by: user?.id ?? null,
-      })
-      .eq("id", id);
+  async function acknowledge(id: string, title: string) {
+    await acknowledgeAlert(id, title);
     router.refresh();
   }
 
-  async function resolve(id: string) {
-    await supabase
-      .from("alerts")
-      .update({ resolved: true, resolved_at: new Date().toISOString() })
-      .eq("id", id);
+  async function resolve(id: string, title: string) {
+    await resolveAlert(id, title);
     router.refresh();
   }
 
@@ -144,7 +130,7 @@ export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
                   {!a.acknowledged && (
                     <button
                       type="button"
-                      onClick={() => acknowledge(a.id)}
+                      onClick={() => acknowledge(a.id, a.title)}
                       className="inline-flex items-center gap-1 rounded-lg border border-card px-3 py-1.5 text-xs hover:bg-[#0a0f1a]"
                     >
                       <Eye className="h-3 w-3" />
@@ -153,7 +139,7 @@ export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
                   )}
                   <button
                     type="button"
-                    onClick={() => resolve(a.id)}
+                    onClick={() => resolve(a.id, a.title)}
                     className="inline-flex items-center gap-1 rounded-lg bg-green-600/20 text-green-400 px-3 py-1.5 text-xs hover:bg-green-600/30"
                   >
                     <Check className="h-3 w-3" />

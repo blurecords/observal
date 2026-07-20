@@ -7,6 +7,9 @@ export interface OrgSettings {
   alerts_email_enabled: boolean;
   lamp_hours_warning: number;
   pre_opening_alert_minutes: number;
+  webhook_url: string | null;
+  webhook_enabled: boolean;
+  webhook_min_severity: string;
 }
 
 export interface OpeningHourRow {
@@ -230,6 +233,87 @@ export async function sendAlertEmail(
   });
 }
 
+const SEVERITY_RANK: Record<string, number> = {
+  info: 0,
+  warning: 1,
+  critical: 2,
+};
+
+export async function sendAlertWebhook(
+  supabase: SupabaseClient,
+  org: OrgSettings,
+  alert: { id: string; title: string; message?: string | null; severity: string },
+) {
+  if (!org.webhook_enabled || !org.webhook_url) return;
+
+  const minRank = SEVERITY_RANK[org.webhook_min_severity] ?? 1;
+  const alertRank = SEVERITY_RANK[alert.severity] ?? 0;
+  if (alertRank < minRank) return;
+
+  const { data: sent } = await supabase
+    .from("alert_notifications")
+    .select("id")
+    .eq("alert_id", alert.id)
+    .eq("channel", "webhook")
+    .maybeSingle();
+  if (sent) return;
+
+  const appUrl = Deno.env.get("APP_URL") ?? "https://observal.app";
+  const alertUrl = `${appUrl}/app/alerts`;
+  const isSlack = org.webhook_url.includes("hooks.slack.com");
+
+  const payload = isSlack
+    ? {
+        text: `[Observal ${alert.severity.toUpperCase()}] ${alert.title}`,
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*${alert.title}*\n${alert.message ?? ""}\n<${alertUrl}|Ver en Observal>`,
+            },
+          },
+        ],
+      }
+    : {
+        event: "alert.created",
+        severity: alert.severity,
+        title: alert.title,
+        message: alert.message ?? "",
+        url: alertUrl,
+      };
+
+  try {
+    const resp = await fetch(org.webhook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) {
+      console.error("Webhook error:", await resp.text());
+      return;
+    }
+  } catch (err) {
+    console.error("Webhook failed:", err);
+    return;
+  }
+
+  await supabase.from("alert_notifications").insert({
+    alert_id: alert.id,
+    channel: "webhook",
+    recipient: org.webhook_url,
+  });
+}
+
+export async function notifyAlert(
+  supabase: SupabaseClient,
+  org: OrgSettings,
+  alert: { id: string; title: string; message?: string | null; severity: string },
+) {
+  await sendAlertEmail(supabase, org, alert);
+  await sendAlertWebhook(supabase, org, alert);
+}
+
 export async function evaluateIngestAlerts(
   supabase: SupabaseClient,
   collectorId: string,
@@ -240,7 +324,7 @@ export async function evaluateIngestAlerts(
   const { data: org } = await supabase
     .from("organizations")
     .select(
-      "id, timezone, notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes",
+      "id, timezone, notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes, webhook_url, webhook_enabled, webhook_min_severity",
     )
     .eq("id", organizationId)
     .single();
@@ -292,7 +376,7 @@ export async function evaluateIngestAlerts(
             : `El equipo crítico no responde durante horario de apertura.`,
         });
         if (alert && "title" in alert) {
-          await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+          await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
         }
       } else if (await isRuleEnabled(supabase, org.id, "device_offline")) {
         const severity =
@@ -310,7 +394,7 @@ export async function evaluateIngestAlerts(
             message: `Estado: offline`,
           });
           if (alert && "title" in alert) {
-            await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+            await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
           }
         }
       }
@@ -335,7 +419,7 @@ export async function evaluateIngestAlerts(
             : "La matriz AV no responde durante horario activo.",
         });
         if (alert && "title" in alert) {
-          await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+          await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
         }
       }
     } else if (hb.status === "online") {
@@ -370,7 +454,7 @@ export async function evaluateIngestAlerts(
         message: "PJLink Class 2 reporta estado de error en el proyector.",
       });
       if (alert && "title" in alert) {
-        await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+        await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
       }
     } else if (
       m.name === "projector.availability" &&
@@ -405,7 +489,7 @@ export async function evaluateIngestAlerts(
       message: `Supera el umbral de ${org.lamp_hours_warning} horas. Planifica mantenimiento.`,
     });
     if (alert && "title" in alert) {
-      await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+      await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
     }
   }
 }
@@ -429,7 +513,7 @@ export async function evaluateCollectorOffline(
     const { data: org } = await supabase
       .from("organizations")
       .select(
-        "id, timezone, notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes",
+        "id, timezone, notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes, webhook_url, webhook_enabled, webhook_min_severity",
       )
       .eq("id", c.organization_id)
       .single();
@@ -445,7 +529,7 @@ export async function evaluateCollectorOffline(
       message: `Última conexión: ${c.last_seen_at ?? "nunca"}`,
     });
     if (alert && "title" in alert) {
-      await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+      await notifyAlert(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
     }
 
     await supabase.from("collectors").update({ status: "offline" }).eq("id", c.id);

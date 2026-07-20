@@ -1,8 +1,8 @@
 "use client";
 
+import { revokeCollector, rotateCollectorToken } from "@/actions/collectors";
 import { OwnerGate } from "@/components/app/role-context";
 import { StatusBadge } from "@/components/app/status-badge";
-import { createClient } from "@/lib/supabase/client";
 import { Loader2, RotateCw, ShieldOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,44 +10,43 @@ import { useState } from "react";
 
 interface CollectorActionsProps {
   collectorId: string;
+  collectorName: string;
   status: string;
 }
 
-export function CollectorActions({ collectorId, status }: CollectorActionsProps) {
-  const supabase = createClient();
+export function CollectorActions({
+  collectorId,
+  collectorName,
+  status,
+}: CollectorActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<"rotate" | "revoke" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function callFunction(path: string, action: "rotate" | "revoke") {
-    setLoading(action);
+  async function handleRotate() {
+    setLoading("rotate");
     setMessage(null);
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${path}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ collector_id: collectorId }),
-      },
-    );
-    const data = await res.json();
+    const result = await rotateCollectorToken(collectorId, collectorName);
     setLoading(null);
-
-    if (!res.ok) {
-      setMessage(data.error ?? "Error");
+    if ("error" in result && result.error) {
+      setMessage(result.error);
       return;
     }
+    setMessage(result.message ?? "Token rotado");
+    router.refresh();
+  }
 
-    setMessage(data.message ?? "Operación completada");
+  async function handleRevoke() {
+    if (!confirm("¿Revocar este collector? Dejará de enviar datos.")) return;
+    setLoading("revoke");
+    setMessage(null);
+    const result = await revokeCollector(collectorId, collectorName);
+    setLoading(null);
+    if ("error" in result && result.error) {
+      setMessage(result.error);
+      return;
+    }
+    setMessage(result.message ?? "Collector revocado");
     router.refresh();
   }
 
@@ -70,7 +69,7 @@ export function CollectorActions({ collectorId, status }: CollectorActionsProps)
           <button
             type="button"
             disabled={!!loading}
-            onClick={() => callFunction("collectors-rotate-token", "rotate")}
+            onClick={handleRotate}
             className="inline-flex items-center gap-2 rounded-lg border border-card px-4 py-2 text-sm hover:bg-card disabled:opacity-50"
           >
             {loading === "rotate" ? (
@@ -83,11 +82,7 @@ export function CollectorActions({ collectorId, status }: CollectorActionsProps)
           <button
             type="button"
             disabled={!!loading}
-            onClick={() => {
-              if (confirm("¿Revocar este collector? Dejará de enviar datos.")) {
-                callFunction("collectors-revoke", "revoke");
-              }
-            }}
+            onClick={handleRevoke}
             className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 text-red-400 px-4 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
           >
             {loading === "revoke" ? (

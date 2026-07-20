@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileSpreadsheet, Printer } from "lucide-react";
+import { BarChart3, FileSpreadsheet, Printer } from "lucide-react";
 
 const exports = [
   {
@@ -15,7 +15,7 @@ const exports = [
   {
     href: "/api/reports/uptime",
     title: "Disponibilidad (7 días)",
-    description: "Uptime % por equipo basado en métricas device.reachable.",
+    description: "Uptime % por equipo (PJLink, SNMP, ping, etc.).",
   },
 ];
 
@@ -45,6 +45,20 @@ export default function ReportsPage() {
           </a>
         ))}
       </div>
+
+      <Link
+        href="/app/reports/sla"
+        className="rounded-xl border border-card bg-card p-5 flex items-start gap-4 hover:border-blue-600/40 transition-colors block"
+      >
+        <BarChart3 className="h-8 w-8 text-blue-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold">Informe SLA mensual</p>
+          <p className="text-sm text-muted mt-1">
+            Uptime del mes anterior vs objetivo configurado.
+          </p>
+          <p className="text-xs text-blue-400 mt-2">Ver informe →</p>
+        </div>
+      </Link>
 
       <div className="rounded-xl border border-card bg-card p-6">
         <div className="flex items-center gap-3 mb-3">

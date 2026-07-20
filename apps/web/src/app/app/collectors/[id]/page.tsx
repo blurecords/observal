@@ -54,7 +54,11 @@ export default async function CollectorDetailPage({
 
       <div className="rounded-xl border border-card bg-card p-6">
         <h3 className="font-semibold mb-4">Seguridad</h3>
-        <CollectorActions collectorId={collector.id} status={collector.status} />
+        <CollectorActions
+          collectorId={collector.id}
+          collectorName={collector.name ?? "Observal Collector"}
+          status={collector.status}
+        />
       </div>
 
       <div className="rounded-xl border border-card bg-card overflow-hidden">

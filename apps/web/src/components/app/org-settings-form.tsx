@@ -1,5 +1,6 @@
 "use client";
 
+import { updateOrganizationSettings } from "@/actions/settings";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -21,10 +22,10 @@ export function OrganizationSettings() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [orgId, setOrgId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [timezone, setTimezone] = useState("Europe/Madrid");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -33,7 +34,6 @@ export function OrganizationSettings() {
         .select("organization_id")
         .single();
       if (!profile) return;
-      setOrgId(profile.organization_id);
 
       const { data: org } = await supabase
         .from("organizations")
@@ -52,13 +52,14 @@ export function OrganizationSettings() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!orgId) return;
     setSaving(true);
-    await supabase
-      .from("organizations")
-      .update({ name: name.trim(), timezone })
-      .eq("id", orgId);
+    setError(null);
+    const result = await updateOrganizationSettings({ name, timezone });
     setSaving(false);
+    if ("error" in result && result.error) {
+      setError(result.error);
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -90,6 +91,7 @@ export function OrganizationSettings() {
           ))}
         </select>
       </div>
+      {error && <p className="text-sm text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={saving}

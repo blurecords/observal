@@ -21,6 +21,9 @@ export function LandingNav() {
           <a href="#sectores" className="hover:text-white transition-colors">
             Sectores
           </a>
+          <a href="#precios" className="hover:text-white transition-colors">
+            Precios
+          </a>
         </nav>
         <div className="flex items-center gap-3">
           <Link
@@ -244,6 +247,107 @@ export function UseCases() {
           <div className="mt-6 pt-4 border-t border-[var(--card-border)] text-xs text-muted">
             2 alertas abiertas · 1 collector activo
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function Pricing() {
+  const plans = [
+    {
+      name: "Starter",
+      price: "Gratis",
+      period: "beta",
+      desc: "Ideal para probar Observal en una instalación piloto.",
+      features: [
+        "1 collector incluido",
+        "Hasta 25 equipos AV",
+        "Alertas por email",
+        "7 días de histórico",
+      ],
+      cta: "Empezar gratis",
+      highlighted: false,
+    },
+    {
+      name: "Pro",
+      price: "99 €",
+      period: "/mes por sede",
+      desc: "Para integradores y venues con monitorización continua.",
+      features: [
+        "Collectors ilimitados",
+        "Equipos ilimitados",
+        "Informe SLA mensual",
+        "Roles de equipo",
+        "90 días de histórico",
+      ],
+      cta: "Contactar ventas",
+      highlighted: true,
+    },
+    {
+      name: "Enterprise",
+      price: "A medida",
+      period: "",
+      desc: "Multi-sede, SLA garantizado y soporte prioritario.",
+      features: [
+        "Multi-organización",
+        "Retención extendida",
+        "Onboarding dedicado",
+        "SLA contractual",
+      ],
+      cta: "Hablar con nosotros",
+      highlighted: false,
+    },
+  ];
+
+  return (
+    <section id="precios" className="border-t border-card px-6 py-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="text-3xl font-bold">Precios simples, sin sorpresas</h2>
+          <p className="mt-4 text-muted">
+            Empieza gratis en beta. Escala cuando despliegues Observal en
+            producción para tus clientes AV.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`rounded-xl border p-6 flex flex-col ${
+                plan.highlighted
+                  ? "border-blue-600 bg-blue-600/10"
+                  : "border-card bg-card"
+              }`}
+            >
+              <h3 className="font-semibold text-lg">{plan.name}</h3>
+              <p className="mt-3">
+                <span className="text-3xl font-bold">{plan.price}</span>
+                {plan.period && (
+                  <span className="text-sm text-muted ml-1">{plan.period}</span>
+                )}
+              </p>
+              <p className="text-sm text-muted mt-3 leading-relaxed">{plan.desc}</p>
+              <ul className="mt-6 space-y-2 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="text-sm flex items-center gap-2">
+                    <Zap className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/login"
+                className={`mt-6 block text-center rounded-lg py-2.5 text-sm font-medium ${
+                  plan.highlighted
+                    ? "bg-blue-600 hover:bg-blue-500 text-white"
+                    : "border border-card hover:bg-[#0a0f1a]"
+                }`}
+              >
+                {plan.cta}
+              </Link>
+            </div>
+          ))}
         </div>
       </div>
     </section>

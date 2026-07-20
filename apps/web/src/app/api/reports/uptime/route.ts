@@ -1,4 +1,5 @@
 import { toCsv } from "@/lib/csv";
+import { computeUptimeFromMetrics, computeUptimePct } from "@/lib/sla";
 import { relationName } from "@/lib/supabase/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -18,15 +19,13 @@ export async function GET() {
   for (const device of devices ?? []) {
     const { data: metrics } = await supabase
       .from("metrics")
-      .select("value_bool, recorded_at")
+      .select("name, value_bool, value_text")
       .eq("device_id", device.id)
-      .eq("name", "device.reachable")
+      .in("name", ["device.reachable", "snmp.reachable", "tcp.port_open", "projector.power"])
       .gte("recorded_at", since);
 
-    const samples = metrics ?? [];
-    const online = samples.filter((m) => m.value_bool === true).length;
-    const total = samples.length;
-    const uptimePct = total > 0 ? Math.round((online / total) * 100) : null;
+    const { samples, onlineSamples } = computeUptimeFromMetrics(metrics ?? []);
+    const uptimePct = computeUptimePct(onlineSamples, samples);
     const room = relationName(device.rooms as { name: string } | { name: string }[] | null);
 
     rows.push([
@@ -34,7 +33,7 @@ export async function GET() {
       room ?? "",
       device.last_status ?? "unknown",
       uptimePct ?? "—",
-      total,
+      samples,
     ]);
   }
 

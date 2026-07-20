@@ -4,7 +4,7 @@ Checklist para el primer cliente en producción (museo, venue corporativo o inte
 
 ## Antes del on-site
 
-- [ ] Migraciones Sprint 1–8 aplicadas en Supabase
+- [ ] Migraciones Sprint 1–10 aplicadas en Supabase
 - [ ] Edge Functions desplegadas (incl. `purge-metrics`)
 - [ ] `CREDENTIALS_ENCRYPTION_KEY` configurada (Vercel + Supabase)
 - [ ] Cron `check-collectors` (5 min) y `purge-metrics` (diario 03:00)
@@ -16,7 +16,7 @@ Checklist para el primer cliente en producción (museo, venue corporativo o inte
 
 1. Completar **Onboarding** (`/app/onboarding`)
 2. **Ajustes → Organización**: nombre, timezone
-3. **Ajustes → Notificaciones**: email alertas, retención métricas
+3. **Ajustes → Notificaciones**: email alertas, webhook Slack, retención métricas
 4. **Ajustes → Horarios de apertura** por venue
 5. **Ajustes → Equipo**: invitar integrador AV (rol integrator) y cliente (rol viewer)
 

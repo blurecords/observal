@@ -68,6 +68,28 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Pairing code already used or revoked" }, 409);
     }
 
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("plan")
+      .eq("id", profile.organization_id)
+      .single();
+
+    const plan = org?.plan ?? "starter";
+    if (plan === "starter") {
+      const { count } = await supabase
+        .from("collectors")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", profile.organization_id)
+        .in("status", ["active", "offline"]);
+
+      if ((count ?? 0) >= 1) {
+        return jsonResponse(
+          { error: "El plan Starter permite 1 collector. Actualiza a Pro para añadir más." },
+          403,
+        );
+      }
+    }
+
     let venueId = body.venue_id;
     if (!venueId) {
       const venueName = body.venue_name ?? "Mi instalación";

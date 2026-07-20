@@ -9,6 +9,8 @@
 - [ ] Secrets: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`, `CRON_SECRET`, `CREDENTIALS_ENCRYPTION_KEY`
 - [ ] Cron `check-collectors` cada 5 min
 - [ ] Cron `purge-metrics` diario (`0 3 * * *`)
+- [ ] Cron `send-sla-reports` diario (`0 8 * * *`) — envía el día configurado por org
+- [ ] `RESEND_API_KEY` en Vercel (invitaciones + SLA) y Supabase (alertas + webhooks vía edge)
 - [ ] Backups activados (plan Pro recomendado)
 
 ## Edge Functions
@@ -22,6 +24,7 @@ supabase functions deploy check-collectors
 supabase functions deploy collectors-revoke
 supabase functions deploy collectors-rotate-token
 supabase functions deploy purge-metrics
+supabase functions deploy send-sla-reports
 ```
 
 Generar clave de cifrado de credenciales (misma en Vercel y Supabase):
@@ -39,6 +42,8 @@ openssl rand -base64 32
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_APP_URL=https://observal.app`
    - `CREDENTIALS_ENCRYPTION_KEY` (misma clave que en Supabase Edge Functions)
+   - `RESEND_API_KEY` (invitaciones de equipo e informes SLA)
+   - `ALERTS_FROM_EMAIL=Observal <alerts@tu-dominio.com>`
 4. Dominio custom: `observal.app`
 
 ## DNS Hostinger

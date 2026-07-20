@@ -40,6 +40,7 @@ export function TeamSettings({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +56,9 @@ export function TeamSettings({
     if ("inviteUrl" in result && result.inviteUrl) {
       setInviteUrl(result.inviteUrl);
       setEmail("");
+      if ("emailed" in result && result.emailed) {
+        setMessage("Invitación enviada por email.");
+      }
     }
     router.refresh();
   }
@@ -204,7 +208,13 @@ export function TeamSettings({
         <p className="text-xs text-muted">{ROLE_DESCRIPTIONS[inviteRole]}</p>
       </form>
 
-      {inviteUrl && (
+      {message && (
+        <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3">
+          {message}
+        </p>
+      )}
+
+      {inviteUrl && !message && (
         <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 break-all">
           Enlace de invitación copiado — compártelo con el invitado:
           <br />
