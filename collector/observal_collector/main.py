@@ -38,7 +38,13 @@ class CollectorAgent:
         self._last_poll_at = 0.0
 
     async def run(self) -> None:
-        log.info("Observal collector v%s — hardware_id=%s", __version__, self.hardware_id)
+        mode = "demo" if os.environ.get("OBSERVAL_DEMO", "").strip() in ("1", "true", "yes") else "live"
+        log.info(
+            "Observal collector v%s — hardware_id=%s — mode=%s",
+            __version__,
+            self.hardware_id,
+            mode,
+        )
 
         await self.cloud.announce(__version__, get_local_ip())
 
@@ -95,6 +101,7 @@ class CollectorAgent:
 
         metrics: list[dict] = []
         heartbeats: list[dict] = []
+        device_tests: list[dict] = []
 
         for device in devices:
             try:
@@ -107,6 +114,14 @@ class CollectorAgent:
                         "status": "offline",
                     }
                 )
+                if device.get("test_requested_at"):
+                    device_tests.append(
+                        {
+                            "device_id": device["id"],
+                            "ok": False,
+                            "message": str(exc),
+                        }
+                    )
                 continue
 
             heartbeats.append(
@@ -119,7 +134,22 @@ class CollectorAgent:
             for m in result.metrics:
                 metrics.append({**m, "device_id": device["id"]})
 
-        payload = {"metrics": metrics, "heartbeats": heartbeats}
+            if device.get("test_requested_at"):
+                ok = result.status == "online" and not result.error
+                msg = (
+                    f"Conexión OK ({result.latency_ms} ms)"
+                    if ok and result.latency_ms
+                    else ("Conexión OK" if ok else (result.error or "Sin respuesta"))
+                )
+                device_tests.append(
+                    {
+                        "device_id": device["id"],
+                        "ok": ok,
+                        "message": msg,
+                    }
+                )
+
+        payload = {"metrics": metrics, "heartbeats": heartbeats, "device_tests": device_tests}
 
         try:
             await self.cloud.ingest(self.collector_id, self.ingest_token, payload)

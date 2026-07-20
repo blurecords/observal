@@ -85,21 +85,23 @@ class PjlinkAdapter(BaseAdapter):
 
     async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
         password = credentials.get("pjlink_password") or credentials.get("password", "")
+        class2 = device.get("profile") == "pjlink_class2"
         loop = asyncio.get_event_loop()
         try:
             data = await loop.run_in_executor(
-                None, self._query_pjlink, host, password
+                None, self._query_pjlink, host, password, class2
             )
         except Exception as exc:
             return PollResult(status="offline", error=str(exc))
 
         status = "online" if data.get("power") != "offline" else "offline"
+        ts = datetime.now(timezone.utc).isoformat()
         metrics = [
             {
                 "name": "projector.power",
                 "value": data.get("power", "unknown"),
                 "status": status,
-                "ts": datetime.now(timezone.utc).isoformat(),
+                "ts": ts,
             }
         ]
         if "lamp_hours" in data:
@@ -108,12 +110,30 @@ class PjlinkAdapter(BaseAdapter):
                     "name": "projector.lamp_hours",
                     "value": data["lamp_hours"],
                     "status": status,
-                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "ts": ts,
+                }
+            )
+        if "input" in data:
+            metrics.append(
+                {
+                    "name": "projector.input",
+                    "value": data["input"],
+                    "status": status,
+                    "ts": ts,
+                }
+            )
+        if "availability" in data:
+            metrics.append(
+                {
+                    "name": "projector.availability",
+                    "value": data["availability"],
+                    "status": status,
+                    "ts": ts,
                 }
             )
         return PollResult(status=status, metrics=metrics)
 
-    def _query_pjlink(self, host: str, password: str) -> dict:
+    def _query_pjlink(self, host: str, password: str, class2: bool = False) -> dict:
         with socket.create_connection((host, 4352), timeout=3) as sock:
             sock.settimeout(3)
             greeting = sock.recv(1024).decode("ascii", errors="ignore")
@@ -145,10 +165,32 @@ class PjlinkAdapter(BaseAdapter):
             except (ValueError, IndexError, OSError):
                 pass
 
+            if class2:
+                try:
+                    sock.sendall(b"%1INPT ?\r")
+                    inpt_resp = sock.recv(256).decode("ascii", errors="ignore")
+                    if "=" in inpt_resp:
+                        raw = inpt_resp.split("=")[1].strip().split()[0]
+                        result["input"] = raw
+                except OSError:
+                    pass
+
+                try:
+                    sock.sendall(b"%1AVMT ?\r")
+                    avmt_resp = sock.recv(256).decode("ascii", errors="ignore")
+                    if "=" in avmt_resp:
+                        code = avmt_resp.split("=")[1].strip()[:1]
+                        avail_map = {"0": "available", "1": "warning", "2": "error"}
+                        result["availability"] = avail_map.get(code, "unknown")
+                except OSError:
+                    pass
+
             return result
 
 
 from observal_collector.adapters.snmp import SnmpAdapter, SnmpQscAdapter
+from observal_collector.adapters.extron_sis import ExtronSisAdapter
+from observal_collector.adapters.demo import DemoAdapter, demo_enabled
 
 ADAPTERS: dict[str, BaseAdapter] = {
     "ping": PingAdapter(),
@@ -157,6 +199,7 @@ ADAPTERS: dict[str, BaseAdapter] = {
     "pjlink_class2": PjlinkAdapter(),
     "snmp_generic": SnmpAdapter(),
     "snmp_qsc": SnmpQscAdapter(),
+    "extron_sis": ExtronSisAdapter(),
 }
 
 
@@ -169,6 +212,11 @@ def _device_credentials(device: dict, credentials: dict | None) -> dict:
 
 
 async def poll_device(device: dict, credentials: dict | None = None) -> PollResult:
+    if demo_enabled():
+        creds = _device_credentials(device, credentials)
+        host = str(device["host"]).split("/")[0]
+        return await DemoAdapter().poll(host, device, creds)
+
     profile = device.get("profile", "ping")
     adapter = ADAPTERS.get(profile, ADAPTERS["ping"])
     creds = _device_credentials(device, credentials)

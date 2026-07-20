@@ -16,7 +16,7 @@ export const ALERT_RULES: Record<
   critical_device_offline: {
     label: "Equipo crítico offline antes de apertura",
     description:
-      "Equipo marcado como crítico sin respuesta dentro del margen previo a la apertura del museo.",
+      "Equipo marcado como crítico sin respuesta dentro del margen previo a la apertura del venue.",
     defaultSeverity: "critical",
   },
   projector_lamp_hours: {

@@ -70,7 +70,7 @@ export default function VenuesPage() {
         <div>
           <h2 className="text-2xl font-bold">Salas y venues</h2>
           <p className="text-muted mt-1">
-            Organiza tu museo por edificios, plantas y galerías.
+            Organiza tus instalaciones por sede, planta y zonas.
           </p>
         </div>
         <button

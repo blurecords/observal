@@ -105,7 +105,7 @@ export default function VenueDetailPage() {
       </div>
 
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Salas y galerías</h3>
+        <h3 className="font-semibold">Salas y zonas</h3>
         <button
           onClick={() => setShowForm(true)}
           className="inline-flex items-center gap-2 rounded-lg border border-card px-3 py-2 text-sm hover:bg-card"
@@ -123,7 +123,7 @@ export default function VenueDetailPage() {
           <input
             value={roomName}
             onChange={(e) => setRoomName(e.target.value)}
-            placeholder="Galería permanente A"
+            placeholder="Sala principal / Rack AV"
             required
             className="flex-1 rounded-lg border border-card bg-[#0a0f1a] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
@@ -143,7 +143,7 @@ export default function VenueDetailPage() {
       )}
 
       {!rooms.length ? (
-        <p className="text-muted text-sm">Añade salas para organizar equipos por galería.</p>
+        <p className="text-muted text-sm">Añade salas para organizar equipos por zona.</p>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {rooms.map((r) => (

@@ -70,7 +70,7 @@ export function NotificationSettings() {
     <form onSubmit={save} className="rounded-xl border border-card bg-card p-6 space-y-4">
       <h3 className="font-semibold">Notificaciones por email</h3>
       <p className="text-sm text-muted">
-        Recibe alertas críticas del AV del museo en tu bandeja de entrada.
+        Recibe alertas críticas de tus sistemas AV en tu bandeja de entrada.
       </p>
 
       <label className="flex items-center gap-3 cursor-pointer">
@@ -88,7 +88,7 @@ export function NotificationSettings() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="tecnico@museo.org"
+          placeholder="tecnico@tuempresa.com"
           className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
       </div>

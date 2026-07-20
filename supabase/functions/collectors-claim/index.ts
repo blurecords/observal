@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
     let venueId = body.venue_id;
     if (!venueId) {
-      const venueName = body.venue_name ?? "Mi museo";
+      const venueName = body.venue_name ?? "Mi instalación";
       const { data: venue, error: venueError } = await supabase
         .from("venues")
         .insert({

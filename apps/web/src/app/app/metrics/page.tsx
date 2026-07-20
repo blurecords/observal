@@ -1,12 +1,20 @@
 "use client";
 
-import { MetricsChart, type MetricPoint } from "@/components/charts/metrics-chart";
+import { MetricsChart, UptimeBar, type MetricPoint } from "@/components/charts/metrics-chart";
 import { DEVICE_TYPES } from "@/lib/av-catalog";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Range = "24h" | "7d" | "30d";
+type MetricKind = "numeric" | "boolean" | "text";
+
+interface MetricRow {
+  recorded_at: string;
+  value_numeric: number | null;
+  value_text: string | null;
+  value_bool: boolean | null;
+}
 
 export default function MetricsExplorerPage() {
   const supabase = createClient();
@@ -17,13 +25,14 @@ export default function MetricsExplorerPage() {
   const [metricName, setMetricName] = useState("");
   const [metricNames, setMetricNames] = useState<string[]>([]);
   const [range, setRange] = useState<Range>("24h");
-  const [data, setData] = useState<MetricPoint[]>([]);
+  const [rows, setRows] = useState<MetricRow[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase
       .from("av_devices")
       .select("id, name, device_type")
+      .eq("enabled", true)
       .order("name")
       .then(({ data }) => {
         setDevices(data ?? []);
@@ -48,7 +57,7 @@ export default function MetricsExplorerPage() {
 
   useEffect(() => {
     if (!deviceId || !metricName) {
-      setData([]);
+      setRows([]);
       return;
     }
 
@@ -58,22 +67,43 @@ export default function MetricsExplorerPage() {
     setLoading(true);
     supabase
       .from("metrics")
-      .select("recorded_at, value_numeric")
+      .select("recorded_at, value_numeric, value_text, value_bool")
       .eq("device_id", deviceId)
       .eq("name", metricName)
       .gte("recorded_at", since)
-      .not("value_numeric", "is", null)
       .order("recorded_at")
-      .then(({ data: rows }) => {
-        setData(
-          (rows ?? []).map((r) => ({
-            ts: r.recorded_at,
-            value: r.value_numeric as number,
-          })),
-        );
+      .then(({ data }) => {
+        setRows((data as MetricRow[]) ?? []);
         setLoading(false);
       });
   }, [deviceId, metricName, range, supabase]);
+
+  const metricKind: MetricKind = useMemo(() => {
+    if (rows.some((r) => r.value_numeric != null)) return "numeric";
+    if (rows.some((r) => r.value_bool != null)) return "boolean";
+    return "text";
+  }, [rows]);
+
+  const chartData: MetricPoint[] = useMemo(() => {
+    if (metricKind === "numeric") {
+      return rows
+        .filter((r) => r.value_numeric != null)
+        .map((r) => ({ ts: r.recorded_at, value: r.value_numeric as number }));
+    }
+    if (metricKind === "boolean") {
+      return rows
+        .filter((r) => r.value_bool != null)
+        .map((r) => ({ ts: r.recorded_at, value: r.value_bool ? 1 : 0 }));
+    }
+    return [];
+  }, [rows, metricKind]);
+
+  const uptime = useMemo(() => {
+    const boolRows = rows.filter((r) => r.value_bool != null);
+    if (!boolRows.length) return null;
+    const online = boolRows.filter((r) => r.value_bool).length;
+    return { online, total: boolRows.length };
+  }, [rows]);
 
   const selectedDevice = devices.find((d) => d.id === deviceId);
   const typeLabel = DEVICE_TYPES.find((t) => t.id === selectedDevice?.device_type)?.label;
@@ -129,20 +159,63 @@ export default function MetricsExplorerPage() {
         </div>
       </div>
 
+      {uptime && metricKind === "boolean" && (
+        <div className="rounded-xl border border-card bg-card p-5">
+          <p className="text-sm text-muted mb-3">Disponibilidad en el periodo</p>
+          <UptimeBar
+            online={uptime.online}
+            total={uptime.total}
+            label={metricName}
+          />
+        </div>
+      )}
+
       <div className="rounded-xl border border-card bg-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="font-semibold">{selectedDevice?.name ?? "—"}</p>
             <p className="text-xs text-muted">
               {typeLabel} · {metricName || "Selecciona métrica"}
+              {metricKind === "boolean" && " · 1=online, 0=offline"}
             </p>
           </div>
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted" />}
         </div>
-        <MetricsChart
-          series={[{ name: metricName || "métrica", data, color: "#3b82f6" }]}
-          height={360}
-        />
+
+        {(metricKind === "numeric" || metricKind === "boolean") && (
+          <MetricsChart
+            series={[{ name: metricName || "métrica", data: chartData, color: "#3b82f6" }]}
+            height={360}
+            unit={metricKind === "boolean" ? "estado" : undefined}
+          />
+        )}
+
+        {metricKind === "text" && (
+          <div className="max-h-80 overflow-auto">
+            {rows.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">Sin datos en este periodo</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="text-muted text-left border-b border-card">
+                  <tr>
+                    <th className="py-2 pr-4">Hora</th>
+                    <th className="py-2">Valor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--card-border)]">
+                  {[...rows].reverse().slice(0, 50).map((r, i) => (
+                    <tr key={i}>
+                      <td className="py-2 pr-4 text-muted text-xs">
+                        {new Date(r.recorded_at).toLocaleString("es-ES")}
+                      </td>
+                      <td className="py-2 font-mono text-xs">{r.value_text ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

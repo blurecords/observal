@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DashboardRecentAlerts } from "@/components/app/dashboard-recent-alerts";
 import { DashboardRoomBars } from "@/components/app/dashboard-charts";
 import { RoomOverviewCard } from "@/components/app/room-overview-card";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +22,19 @@ export default async function DashboardPage() {
     .from("rooms")
     .select("id, name, floor")
     .order("name")
-    .limit(6);
+    .limit(12);
+
+  const { data: recentAlerts } = await supabase
+    .from("alerts")
+    .select("id, title, severity, created_at")
+    .eq("resolved", false)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id")
+    .limit(1);
 
   const { data: alerts } = await supabase
     .from("alerts")
@@ -78,7 +91,7 @@ export default async function DashboardPage() {
       <div>
         <h2 className="text-2xl font-bold">Command Center</h2>
         <p className="text-muted mt-1">
-          Vista general del AV de tu museo en tiempo real.
+          Vista general de tus sistemas AV en tiempo real.
         </p>
       </div>
 
@@ -97,13 +110,31 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {!venues?.length && (
+        <div className="rounded-xl border border-blue-600/30 bg-blue-600/10 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="font-semibold">Completa la configuración inicial</h3>
+            <p className="text-sm text-muted mt-1">
+              Define tu organización y la primera sede antes de cargar equipos AV.
+            </p>
+          </div>
+          <Link
+            href="/app/onboarding"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500 shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Asistente de inicio
+          </Link>
+        </div>
+      )}
+
       {!collectors?.length && (
         <div className="rounded-xl border border-dashed border-card bg-card/50 p-8 text-center">
           <Radio className="h-10 w-10 text-blue-400 mx-auto mb-4" />
           <h3 className="font-semibold text-lg">Activa tu primer collector</h3>
           <p className="text-muted text-sm mt-2 max-w-md mx-auto">
-            Conecta la Raspberry Pi a la red del museo e introduce el código
-            de la etiqueta para empezar.
+            Conecta la Raspberry Pi a la red AV e introduce el código de la
+            etiqueta para empezar.
           </p>
           <Link
             href="/app/collectors/activate"
@@ -118,7 +149,7 @@ export default async function DashboardPage() {
       {roomStats.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Salas del museo</h3>
+            <h3 className="font-semibold">Zonas y salas</h3>
             <Link href="/app/venues" className="text-sm text-blue-400 hover:underline">
               Ver todas
             </Link>
@@ -140,6 +171,8 @@ export default async function DashboardPage() {
       )}
 
       {roomBars.length > 0 && <DashboardRoomBars rooms={roomBars} />}
+
+      {!!recentAlerts?.length && <DashboardRecentAlerts alerts={recentAlerts} />}
 
       {!!collectors?.length && (
         <div className="rounded-xl border border-card bg-card overflow-hidden">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Monitor, Radio, Shield, Zap } from "lucide-react";
+import { Building2, Monitor, Radio, Shield, Zap } from "lucide-react";
 
 export function LandingNav() {
   return (
@@ -18,8 +18,8 @@ export function LandingNav() {
           <a href="#equipos" className="hover:text-white transition-colors">
             Equipos
           </a>
-          <a href="#museos" className="hover:text-white transition-colors">
-            Museos
+          <a href="#sectores" className="hover:text-white transition-colors">
+            Sectores
           </a>
         </nav>
         <div className="flex items-center gap-3">
@@ -48,16 +48,18 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-card bg-card px-4 py-1.5 text-xs text-muted mb-8">
           <Radio className="h-3 w-3 text-blue-400" />
-          Monitorización AV multiprotocolo para museos
+          Monitorización AV multiprotocolo en remoto
         </div>
         <h1 className="max-w-3xl text-4xl md:text-6xl font-bold leading-tight tracking-tight">
-          Tu museo abierto al público.{" "}
-          <span className="text-blue-400">Tu AV bajo control</span> en remoto.
+          Todo tu sistema AV,{" "}
+          <span className="text-blue-400">visible y bajo control</span> desde
+          cualquier lugar.
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted leading-relaxed">
-          Observal monitoriza proyectores, pantallas LED, mesas de sonido,
-          iluminación y procesadores de vídeo desde un único panel. Enchufa la
-          Pi, activa con un código y olvídate de acceder al hardware.
+          Observal monitoriza proyectores, pantallas LED, audio, iluminación,
+          matrices y procesadores de vídeo en instalaciones fijas. Enchufa el
+          collector, activa con un código y gestiona todo desde la nube — sin
+          acceder al hardware.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link
@@ -81,8 +83,8 @@ export function Hero() {
 const steps = [
   {
     step: "1",
-    title: "Enchufa la Pi",
-    desc: "Conecta el Observal Collector a la red AV del museo por Ethernet.",
+    title: "Enchufa el collector",
+    desc: "Conecta el Observal Collector a la red AV de la instalación por Ethernet.",
   },
   {
     step: "2",
@@ -92,7 +94,7 @@ const steps = [
   {
     step: "3",
     title: "Monitoriza todo",
-    desc: "Añade equipos AV desde la web. La Pi los vigila 24/7.",
+    desc: "Añade equipos desde la web. El collector los vigila 24/7 con multimarca.",
   },
 ];
 
@@ -102,8 +104,8 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl">
         <h2 className="text-3xl font-bold">Cómo funciona</h2>
         <p className="mt-3 text-muted max-w-xl">
-          Tres pasos. Cero configuración local. Diseñado para técnicos de museo
-          e integradores AV.
+          Tres pasos. Cero configuración local. Pensado para integradores AV,
+          técnicos de sala y equipos de operaciones.
         </p>
         <div className="mt-12 grid md:grid-cols-3 gap-6">
           {steps.map((s) => (
@@ -133,6 +135,8 @@ const equipment = [
   "Mesas de luces",
   "Amplificadores",
   "Media players",
+  "Switches AV",
+  "Controladores",
 ];
 
 export function Equipment() {
@@ -141,8 +145,8 @@ export function Equipment() {
       <div className="mx-auto max-w-6xl">
         <h2 className="text-3xl font-bold">Multiprotocolo, multimarca</h2>
         <p className="mt-3 text-muted max-w-xl">
-          Sistema de adaptadores para leer el estado de cualquier fabricante:
-          PJLink, SNMP, Extron, NovaStar y más.
+          Adaptadores para leer el estado real de cualquier fabricante: PJLink,
+          SNMP, Extron, NovaStar, TCP y más — en una sola plataforma.
         </p>
         <div className="mt-10 flex flex-wrap gap-3">
           {equipment.map((e) => (
@@ -159,23 +163,42 @@ export function Equipment() {
   );
 }
 
-export function MuseumCase() {
+const sectors = [
+  {
+    title: "Integradores AV",
+    desc: "Monitoriza todas tus instalaciones desde un panel. Menos desplazamientos, más SLA cumplido.",
+  },
+  {
+    title: "Venues y auditorios",
+    desc: "Proyectores, PA y iluminación bajo control antes de cada evento.",
+  },
+  {
+    title: "Corporativo y retail",
+    desc: "Videowalls, señalización digital y salas de reunión siempre operativas.",
+  },
+  {
+    title: "Cultura y exposiciones",
+    desc: "Museos, galerías y espacio expositivo con alertas según horario de apertura.",
+  },
+];
+
+export function UseCases() {
   return (
-    <section id="museos" className="border-t border-card px-6 py-24">
-      <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-12 items-center">
+    <section id="sectores" className="border-t border-card px-6 py-24">
+      <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-12 items-start">
         <div>
-          <h2 className="text-3xl font-bold">Diseñado para museos</h2>
+          <h2 className="text-3xl font-bold">Para cualquier instalación AV</h2>
           <p className="mt-4 text-muted leading-relaxed">
-            Organiza equipos por edificio, galería y sala. Alertas contextuales
-            según horario de apertura. Sabrás si un proyector falla antes de que
-            entre el primer visitante.
+            Desde un rack en un hotel hasta una red completa en un recinto
+            ferial. Organiza equipos por sede, zona y sala. Alertas
+            inteligentes, histórico de métricas y disponibilidad en tiempo real.
           </p>
           <ul className="mt-6 space-y-3">
             {[
-              "Vista por salas y exposiciones",
-              "Alertas antes de la apertura",
-              "Horas de lámpara y temperatura",
-              "Histórico de disponibilidad AV",
+              "Command Center con estado global",
+              "Alertas por umbral y equipos críticos",
+              "Horas de lámpara, temperatura, uptime",
+              "Histórico y dashboards profesionales",
             ].map((item) => (
               <li key={item} className="flex items-center gap-2 text-sm">
                 <Zap className="h-4 w-4 text-blue-400 shrink-0" />
@@ -183,22 +206,43 @@ export function MuseumCase() {
               </li>
             ))}
           </ul>
+          <div className="mt-8 grid sm:grid-cols-2 gap-4">
+            {sectors.map((s) => (
+              <div
+                key={s.title}
+                className="rounded-lg border border-card bg-card/50 p-4"
+              >
+                <Building2 className="h-4 w-4 text-blue-400 mb-2" />
+                <p className="font-medium text-sm">{s.title}</p>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  {s.desc}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="rounded-xl border border-card bg-card p-6 font-mono text-sm">
-          <div className="text-muted mb-4">Command Center — Museo demo</div>
+        <div className="rounded-xl border border-card bg-card p-6 font-mono text-sm sticky top-24">
+          <div className="text-muted mb-4">Command Center — Instalación demo</div>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Galería Permanente</span>
+              <span>Sala principal</span>
+              <span className="text-green-400">12/12 online</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Rack AV planta 1</span>
               <span className="text-green-400">8/8 online</span>
             </div>
             <div className="flex justify-between">
-              <span>Exposición &quot;Luz&quot;</span>
-              <span className="text-yellow-400">11/12 online</span>
+              <span>Videowall recepción</span>
+              <span className="text-yellow-400">3/4 online</span>
             </div>
             <div className="flex justify-between">
               <span>Auditorio</span>
-              <span className="text-red-400">4/6 online</span>
+              <span className="text-red-400">5/7 online</span>
             </div>
+          </div>
+          <div className="mt-6 pt-4 border-t border-[var(--card-border)] text-xs text-muted">
+            2 alertas abiertas · 1 collector activo
           </div>
         </div>
       </div>
@@ -216,7 +260,8 @@ export function LandingFooter() {
           <span className="text-muted text-sm">· observal.app</span>
         </div>
         <p className="text-sm text-muted">
-          Monitorización AV remota para museos y venues culturales.
+          Monitorización remota de sistemas AV para integradores e instalaciones
+          fijas.
         </p>
       </div>
     </footer>

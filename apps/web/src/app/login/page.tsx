@@ -35,7 +35,7 @@ function LoginForm() {
       <div className="rounded-xl border border-card bg-card p-8">
         <h1 className="text-2xl font-bold text-center">Accede a tu plataforma</h1>
         <p className="mt-2 text-center text-sm text-muted">
-          Monitoriza el AV de tu museo desde cualquier lugar.
+          Monitoriza tus sistemas AV desde cualquier lugar.
         </p>
 
         {error && (

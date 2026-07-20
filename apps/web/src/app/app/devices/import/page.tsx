@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 const CSV_TEMPLATE = `name,device_type,host,profile,brand,model,critical
 "Proyector Galería 1",projector,192.168.10.10,pjlink_class1,Panasonic,PT-RZ990,yes
-"Matriz AV",video_matrix,192.168.10.20,snmp_generic,Extron,DTP CrossPoint 84,no`;
+"Matriz AV",video_matrix,192.168.10.20,extron_sis,Extron,DTP CrossPoint 84,no`;
 
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.trim().split("\n");
@@ -97,10 +97,14 @@ export default function ImportDevicesPage() {
         typeDef?.defaultProfile ||
         "ping") as MonitoringProfile;
 
-      const metadata: Record<string, string> = {};
+      const metadata: Record<string, string | number> = {};
       if (profile.startsWith("snmp")) {
         metadata.snmp_version = "2c";
         metadata.snmp_community = row.snmp_community || "public";
+      }
+      if (profile === "extron_sis") {
+        metadata.sis_port = parseInt(row.sis_port || "23", 10) || 23;
+        if (row.sis_password) metadata.sis_password = row.sis_password;
       }
 
       return {
@@ -143,7 +147,7 @@ export default function ImportDevicesPage() {
         </Link>
         <h2 className="text-2xl font-bold">Importar inventario CSV</h2>
         <p className="text-muted mt-1">
-          Carga múltiples equipos AV de una vez para el museo piloto.
+          Carga múltiples equipos AV de una vez desde CSV.
         </p>
       </div>
 

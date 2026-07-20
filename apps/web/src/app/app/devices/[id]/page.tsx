@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { MetricsChart } from "@/components/charts/metrics-chart";
+import { DeviceTestButton } from "@/components/app/device-test-button";
 import { StatusBadge } from "@/components/app/status-badge";
 import { DEVICE_TYPES, PROFILE_LABELS } from "@/lib/av-catalog";
 import { createClient } from "@/lib/supabase/server";
 import { relationName } from "@/lib/supabase/helpers";
+import { Pencil } from "lucide-react";
 
 export default async function DeviceDetailPage({
   params,
@@ -16,7 +18,7 @@ export default async function DeviceDetailPage({
   const { data: device } = await supabase
     .from("av_devices")
     .select(
-      "id, name, host, device_type, profile, brand, model, last_status, last_seen_at, critical, metadata, rooms(name), venues(name)",
+      "id, name, host, device_type, profile, brand, model, last_status, last_seen_at, critical, metadata, last_test_at, last_test_ok, last_test_message, rooms(name), venues(name)",
     )
     .eq("id", id)
     .single();
@@ -70,7 +72,16 @@ export default async function DeviceDetailPage({
               <span className="font-mono text-sm">{device.host}</span>
             </p>
           </div>
-          <StatusBadge status={device.last_status} />
+          <div className="flex items-center gap-3 shrink-0">
+            <StatusBadge status={device.last_status} />
+            <Link
+              href={`/app/devices/${id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-card px-3 py-1.5 text-sm hover:bg-card"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -90,6 +101,13 @@ export default async function DeviceDetailPage({
           }
         />
       </div>
+
+      <DeviceTestButton
+        deviceId={device.id}
+        lastTestAt={device.last_test_at}
+        lastTestOk={device.last_test_ok}
+        lastTestMessage={device.last_test_message}
+      />
 
       <div className="rounded-xl border border-card bg-card p-5">
         <h3 className="font-semibold mb-4">Métricas — últimas 24 h</h3>

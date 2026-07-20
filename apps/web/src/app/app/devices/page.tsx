@@ -22,7 +22,7 @@ export default async function DevicesPage() {
         <div>
           <h2 className="text-2xl font-bold">Equipos AV</h2>
           <p className="text-muted mt-1">
-            Inventario de equipamiento monitorizado en el museo.
+            Inventario de equipamiento AV monitorizado.
           </p>
         </div>
         <div className="flex items-center gap-2">

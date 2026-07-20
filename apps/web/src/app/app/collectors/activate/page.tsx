@@ -42,7 +42,7 @@ export default function ActivateCollectorPage() {
         },
         body: JSON.stringify({
           pairing_code: code,
-          venue_name: venueName || "Mi museo",
+          venue_name: venueName || "Mi instalación",
           collector_name: collectorName,
         }),
       },
@@ -86,7 +86,7 @@ export default function ActivateCollectorPage() {
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold">
             1
           </span>
-          <p>Conecta la Pi al router del museo por Ethernet.</p>
+          <p>Conecta la Pi al router/switch de la red AV por Ethernet.</p>
         </div>
         <div className="flex gap-3">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold">
@@ -123,13 +123,13 @@ export default function ActivateCollectorPage() {
 
         <div>
           <label className="block text-sm font-medium mb-2">
-            Nombre del museo / venue
+            Nombre de la sede / instalación
           </label>
           <input
             type="text"
             value={venueName}
             onChange={(e) => setVenueName(e.target.value)}
-            placeholder="Museo de Arte Contemporáneo"
+            placeholder="Sede central / Cliente ABC"
             className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>

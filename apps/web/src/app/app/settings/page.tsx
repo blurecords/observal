@@ -1,26 +1,15 @@
 import { AlertRulesSettings, NotificationSettings } from "@/components/app/settings-forms";
 import { OpeningHoursSettings } from "@/components/app/opening-hours-form";
+import { OrganizationSettings } from "@/components/app/org-settings-form";
 import { createClient } from "@/lib/supabase/server";
-
-type OrgRow = { name: string; timezone: string };
-
-function getOrg(
-  rel: OrgRow | OrgRow[] | null | undefined,
-): OrgRow | undefined {
-  if (!rel) return undefined;
-  if (Array.isArray(rel)) return rel[0];
-  return rel;
-}
 
 export default async function SettingsPage() {
   const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, organizations(name, timezone)")
+    .select("full_name, role")
     .single();
-
-  const org = getOrg(profile?.organizations as OrgRow | OrgRow[] | null);
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -29,19 +18,11 @@ export default async function SettingsPage() {
         <p className="text-muted mt-1">Configuración de tu organización y alertas.</p>
       </div>
 
-      <div className="rounded-xl border border-card bg-card p-6 space-y-4">
-        <div>
-          <label className="text-sm text-muted">Organización</label>
-          <p className="font-medium mt-1">{org?.name ?? "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm text-muted">Zona horaria</label>
-          <p className="font-medium mt-1">{org?.timezone ?? "Europe/Madrid"}</p>
-        </div>
-        <div>
-          <label className="text-sm text-muted">Tu rol</label>
-          <p className="font-medium mt-1">{profile?.role ?? "owner"}</p>
-        </div>
+      <OrganizationSettings />
+
+      <div className="rounded-xl border border-card bg-card p-6">
+        <label className="text-sm text-muted">Tu rol</label>
+        <p className="font-medium mt-1">{profile?.role ?? "owner"}</p>
       </div>
 
       <NotificationSettings />

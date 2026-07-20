@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Observal — Monitorización AV para museos",
+  title: "Observal — Monitorización remota de sistemas AV",
   description:
-    "Monitoriza en remoto proyectores, pantallas LED, mesas de sonido y todo tu equipamiento audiovisual.",
+    "Monitoriza en remoto proyectores, LED, audio, iluminación, matrices y todo tu equipamiento AV multiprotocolo.",
   metadataBase: new URL("https://observal.app"),
   openGraph: {
-    title: "Observal — Monitorización AV para museos",
+    title: "Observal — Monitorización remota de sistemas AV",
     description:
-      "Tu AV bajo control en remoto. Proyectores, LED, audio, iluminación y más.",
+      "Tu instalación AV bajo control desde la nube. Multiprotocolo, multimarca, sin acceso local al hardware.",
     url: "https://observal.app",
     siteName: "Observal",
   },

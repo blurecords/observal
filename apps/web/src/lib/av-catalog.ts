@@ -19,7 +19,8 @@ export type MonitoringProfile =
   | "pjlink_class2"
   | "snmp_generic"
   | "snmp_qsc"
-  | "tcp_health";
+  | "tcp_health"
+  | "extron_sis";
 
 export interface DeviceTypeOption {
   id: DeviceType;
@@ -55,8 +56,8 @@ export const DEVICE_TYPES: DeviceTypeOption[] = [
     id: "video_matrix",
     label: "Matriz de vídeo",
     icon: "🔀",
-    defaultProfile: "snmp_generic",
-    suggestedProfiles: ["snmp_generic", "tcp_health", "ping"],
+    defaultProfile: "extron_sis",
+    suggestedProfiles: ["extron_sis", "snmp_generic", "tcp_health", "ping"],
   },
   {
     id: "audio_mixer",
@@ -130,6 +131,7 @@ export const PROFILE_LABELS: Record<MonitoringProfile, string> = {
   snmp_generic: "SNMP genérico",
   snmp_qsc: "SNMP QSC / amplificadores",
   tcp_health: "Puerto TCP",
+  extron_sis: "Extron SIS (matrices / control)",
 };
 
 export const BRAND_SUGGESTIONS: Partial<Record<DeviceType, string[]>> = {
@@ -156,6 +158,10 @@ export function profileNeedsPjlink(profile: MonitoringProfile) {
 
 export function profileNeedsTcpPort(profile: MonitoringProfile) {
   return profile === "tcp_health";
+}
+
+export function profileNeedsSis(profile: MonitoringProfile) {
+  return profile === "extron_sis";
 }
 
 export const DEFAULT_TCP_PORTS: Partial<Record<DeviceType, number>> = {

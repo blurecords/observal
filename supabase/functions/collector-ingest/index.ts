@@ -17,6 +17,11 @@ interface IngestBody {
     status: string;
     latency_ms?: number;
   }>;
+  device_tests?: Array<{
+    device_id: string;
+    ok: boolean;
+    message: string;
+  }>;
 }
 
 Deno.serve(async (req) => {
@@ -87,8 +92,10 @@ Deno.serve(async (req) => {
 
       const { error: metricsError } = await supabase.from("metrics").insert(rows);
       if (metricsError) throw metricsError;
+    }
 
-      for (const hb of body.heartbeats ?? []) {
+    if (body.heartbeats?.length) {
+      for (const hb of body.heartbeats) {
         await supabase
           .from("av_devices")
           .update({
@@ -97,9 +104,6 @@ Deno.serve(async (req) => {
           })
           .eq("id", hb.device_id);
       }
-    }
-
-    if (body.heartbeats?.length) {
       await supabase.from("collector_heartbeats").insert({
         collector_id: collector.id,
         organization_id: collector.organization_id,
@@ -107,6 +111,21 @@ Deno.serve(async (req) => {
         devices_polled: body.heartbeats.length,
         recorded_at: new Date().toISOString(),
       });
+    }
+
+    if (body.device_tests?.length) {
+      const testedAt = new Date().toISOString();
+      for (const test of body.device_tests) {
+        await supabase
+          .from("av_devices")
+          .update({
+            last_test_at: testedAt,
+            last_test_ok: test.ok,
+            last_test_message: test.message,
+            test_requested_at: null,
+          })
+          .eq("id", test.device_id);
+      }
     }
 
     if (collector.organization_id && (body.heartbeats?.length || body.metrics?.length)) {

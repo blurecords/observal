@@ -1,6 +1,6 @@
 # Observal AV
 
-Remote monitoring platform for audiovisual equipment in museums and cultural venues.
+Remote monitoring platform for audiovisual systems — museums, venues, corporate AV, and integrators.
 
 **Domain:** [observal.app](https://observal.app)
 
@@ -8,7 +8,7 @@ Remote monitoring platform for audiovisual equipment in museums and cultural ven
 
 ```
 observal.app (Next.js)  →  Supabase (DB + Auth + Edge Functions)
-Raspberry Pi collector  →  SNMP / PJLink / TCP / … (multi-protocol adapters)
+Raspberry Pi collector  →  PJLink / SNMP / TCP / ping (multi-protocol)
 ```
 
 ## Project structure
@@ -18,7 +18,8 @@ apps/web/           Next.js — landing + platform
 packages/shared/    Shared TypeScript types
 supabase/           Migrations + Edge Functions
 collector/          Python agent for Raspberry Pi
-factory/            Device registration scripts
+factory/            Device registration + SD flash tooling
+docs/               Client, integrator, deploy guides
 ```
 
 ## Quick start — Web
@@ -26,90 +27,69 @@ factory/            Device registration scripts
 ```bash
 cd apps/web
 cp ../../.env.example .env.local
-# Fill NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+## Collector (production Pi)
 
-## Supabase setup
+```bash
+sudo bash collector/install.sh
+# Edit /etc/observal/observal.env + copy identity.json from factory
+sudo systemctl start observal-collector
+```
 
-1. Create project at [supabase.com](https://supabase.com)
-2. Run migrations:
-   ```bash
-   npx supabase link --project-ref YOUR_REF
-   npx supabase db push
-   npx supabase functions deploy
-   ```
-3. Enable **Google** provider in Authentication → Providers
-4. Set redirect URL: `https://observal.app/auth/callback`
+## Factory — register device
 
-### Edge Functions
+```bash
+cd factory && pip install -r requirements.txt
+export SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=...
+python preload-identity.py --register --output-dir ./out/pi-001
+```
+
+See [docs/FACTORY-FLASH.md](docs/FACTORY-FLASH.md)
+
+## Simulate without Pi
+
+```bash
+export SUPABASE_URL=...
+export OBSERVAL_DEV=1
+export OBSERVAL_DEMO=1   # synthetic metrics (default in simulate-collector.py)
+python factory/simulate-collector.py
+```
+
+See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without hardware.
+
+## Edge Functions
 
 | Function | Purpose |
 |----------|---------|
 | `collectors-announce` | Pi first contact |
 | `collectors-poll` | Pi fetch config + token |
-| `collectors-claim` | User activates Pi with pairing code |
-| `collector-ingest` | Pi sends metrics |
-| `check-collectors` | Cron: detect offline collectors (every 5 min) |
+| `collectors-claim` | User activates Pi |
+| `collector-ingest` | Metrics + alert evaluation |
+| `check-collectors` | Cron: offline collectors |
+| `collectors-revoke` | Revoke stolen/lost Pi |
+| `collectors-rotate-token` | Rotate ingest token |
 
-### Alert email (Resend)
+## Documentation
 
-1. Create account at [resend.com](https://resend.com)
-2. Add secrets in Supabase: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`
-3. Configure notification email in `/app/settings`
-
-## Register a test Pi
-
-```bash
-export SUPABASE_URL=https://xxx.supabase.co
-export SUPABASE_SERVICE_ROLE_KEY=your-key
-python factory/register-device.py
-```
-
-Print the pairing code, then activate at `/app/collectors/activate`.
-
-## Collector (Raspberry Pi)
-
-```bash
-cd collector
-pip install -e .
-
-export SUPABASE_URL=https://xxx.supabase.co
-export OBSERVAL_DATA_DIR=./data
-observal-collector
-```
-
-### Adapters (MVP)
-
-| Profile | Protocol | Equipment |
-|---------|----------|-----------|
-| `ping` | ICMP | All |
-| `pjlink_class1` | PJLink TCP 4352 | Projectors |
-| `snmp_generic` | SNMP v2c (snmpget) | Matrices, DSP, generic AV |
-| `snmp_qsc` | SNMP v2c extended | QSC amplifiers |
-| `tcp_health` | TCP port | Processors, media players |
-
-**Pi requirement for SNMP:** `sudo apt install snmp`
-
-## Deploy to observal.app
-
-**Recommended MVP:** Vercel + Hostinger DNS
-
-1. Import repo in Vercel
-2. Set env vars from `.env.example`
-3. In Hostinger DNS:
-   - `A` or `CNAME` for `@` and `app` → Vercel
+| Doc | Audience |
+|-----|----------|
+| [DEV-SIN-PI.md](docs/DEV-SIN-PI.md) | Developers (no Pi yet) |
+| [GUIA-INTEGRADOR.md](docs/GUIA-INTEGRADOR.md) | AV integrators (Extron SIS, PJLink, SNMP) |
+| [GUIA-CLIENTE-MUSEO.md](docs/GUIA-CLIENTE-MUSEO.md) | Museum staff |
+| [DEPLOY-PRODUCTION.md](docs/DEPLOY-PRODUCTION.md) | DevOps |
+| [FACTORY-FLASH.md](docs/FACTORY-FLASH.md) | Manufacturing |
 
 ## Development phases
 
-- [x] **Sprint 1** — Monorepo, schema, landing, auth, activation, collector base
-- [x] **Sprint 2** — Device wizard, venues/rooms, SNMP adapter, ECharts dashboard
-- [x] **Sprint 3** — Alert rules, opening hours, email notifications, CSV import
-- [ ] **Sprint 4** — Production hardening, factory flash, beta museum
+- [x] Sprint 1 — Monorepo, schema, landing, auth, activation
+- [x] Sprint 2 — Device wizard, venues, SNMP, dashboards
+- [x] Sprint 3 — Alerts, opening hours, email, CSV import
+- [x] Sprint 4 — Production hardening, factory flash, beta docs
+- [x] Sprint 5 — Onboarding, demo mode, dev without Pi, device connection test
+- [x] Sprint 6 — Extron SIS, device editing, PJLink Class 2, metrics/dashboard upgrades
 
 ## License
 

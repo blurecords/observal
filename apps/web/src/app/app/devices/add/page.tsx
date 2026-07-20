@@ -9,6 +9,7 @@ import {
   getDeviceType,
   PROFILE_LABELS,
   profileNeedsPjlink,
+  profileNeedsSis,
   profileNeedsSnmp,
   profileNeedsTcpPort,
   type MonitoringProfile,
@@ -59,6 +60,8 @@ export default function AddDevicePage() {
   const [snmpCommunity, setSnmpCommunity] = useState("public");
   const [pjlinkPassword, setPjlinkPassword] = useState("");
   const [tcpPort, setTcpPort] = useState("80");
+  const [sisPort, setSisPort] = useState("23");
+  const [sisPassword, setSisPassword] = useState("");
   const [venueId, setVenueId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [collectorId, setCollectorId] = useState("");
@@ -125,6 +128,10 @@ export default function AddDevicePage() {
     }
     if (profileNeedsTcpPort(profile)) {
       metadata.tcp_port = parseInt(tcpPort, 10) || 80;
+    }
+    if (profileNeedsSis(profile)) {
+      metadata.sis_port = parseInt(sisPort, 10) || 23;
+      if (sisPassword) metadata.sis_password = sisPassword;
     }
 
     const { error: insertError } = await supabase.from("av_devices").insert({
@@ -295,6 +302,30 @@ export default function AddDevicePage() {
               />
             </div>
           )}
+          {profileNeedsSis(profile) && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-2">Puerto SIS</label>
+                <input
+                  value={sisPort}
+                  onChange={(e) => setSisPort(e.target.value)}
+                  placeholder="23"
+                  className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Contraseña SIS (opcional)
+                </label>
+                <input
+                  type="password"
+                  value={sisPassword}
+                  onChange={(e) => setSisPassword(e.target.value)}
+                  className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -326,7 +357,7 @@ export default function AddDevicePage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">Sala / galería</label>
+            <label className="block text-sm font-medium mb-2">Sala / zona</label>
             <select
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}

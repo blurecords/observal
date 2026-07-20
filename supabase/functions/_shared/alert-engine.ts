@@ -288,7 +288,7 @@ export async function evaluateIngestAlerts(
           rule_key: "critical_device_offline",
           title: `${device.name} offline — exposición en riesgo`,
           message: preOpening
-            ? `El equipo crítico no responde y el museo abre en ${ctx.minutesUntilOpen} minutos.`
+            ? `El equipo crítico no responde y el venue abre en ${ctx.minutesUntilOpen} minutos.`
             : `El equipo crítico no responde durante horario de apertura.`,
         });
         if (alert && "title" in alert) {

@@ -4,7 +4,7 @@ import {
   HowItWorks,
   LandingFooter,
   LandingNav,
-  MuseumCase,
+  UseCases,
 } from "@/components/landing/sections";
 
 export default function HomePage() {
@@ -15,7 +15,7 @@ export default function HomePage() {
         <Hero />
         <HowItWorks />
         <Equipment />
-        <MuseumCase />
+        <UseCases />
       </main>
       <LandingFooter />
     </>

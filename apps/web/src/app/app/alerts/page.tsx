@@ -19,7 +19,7 @@ export default async function AlertsPage() {
         <h2 className="text-2xl font-bold">Alertas</h2>
         <p className="text-muted mt-1">
           {openCount} alerta{openCount !== 1 ? "s" : ""} abierta
-          {openCount !== 1 ? "s" : ""} — equipamiento AV del museo.
+          {openCount !== 1 ? "s" : ""} — sistemas AV monitorizados.
         </p>
       </div>
 
