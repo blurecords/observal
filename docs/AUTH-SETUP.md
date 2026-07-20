@@ -20,14 +20,17 @@ Checklist para que el login con Google funcione en local y en `observal.app`.
 | Campo | Valor |
 |-------|-------|
 | **Site URL** | `https://observal.app` (prod) o `http://localhost:3000` (dev) |
-| **Redirect URLs** | Añadir **todas** las que uses: |
+| **Redirect URLs** | Añadir **todas** las que uses (con y sin `www`): |
 
 ```
 https://observal.app/auth/callback
+https://www.observal.app/auth/callback
 http://localhost:3000/auth/callback
 ```
 
 Sin estas URLs, Supabase rechaza el redirect tras Google.
+
+> Si el login falla y acabas en `www.observal.app/?error=...`, el Site URL o los Redirect URLs no coinciden con el dominio que usa el navegador. Añade ambas variantes (`observal.app` y `www.observal.app`).
 
 ## 2. Supabase → Authentication → Providers → Google
 
@@ -91,6 +94,7 @@ Abrir `http://localhost:3000/login` → Google → deberías llegar a `/app`.
 | Síntoma | Causa probable |
 |---------|----------------|
 | Vuelve a `/login?error=auth` | Callback URL no en allowlist de Supabase |
+| `/?error=server_error&error_description=Database+error+saving+new+user` | Trigger de registro falló — aplicar migración `20250724100000_fix_signup_triggers.sql` |
 | Loop login → Google → login | Cookies de sesión no persistidas (fix en `/auth/callback`) |
 | `redirect_uri_mismatch` en Google | URI de callback en Google Cloud no es `...supabase.co/auth/v1/callback` |
 | Entra pero `/app` vacío / errores RLS | Migraciones no aplicadas o profile no creado |

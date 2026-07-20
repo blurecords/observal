@@ -7,10 +7,12 @@ import {
   Pricing,
   UseCases,
 } from "@/components/landing/sections";
+import { AuthErrorRedirect } from "@/components/auth-error-redirect";
 
 export default function HomePage() {
   return (
     <>
+      <AuthErrorRedirect />
       <LandingNav />
       <main>
         <Hero />

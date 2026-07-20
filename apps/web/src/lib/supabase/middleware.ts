@@ -29,6 +29,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const authError =
+    request.nextUrl.searchParams.get("error_description") ??
+    request.nextUrl.searchParams.get("error");
+
+  if (authError && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("error", authError);
+    url.hash = "";
+    return NextResponse.redirect(url);
+  }
+
   if (request.nextUrl.pathname.startsWith("/app") && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
