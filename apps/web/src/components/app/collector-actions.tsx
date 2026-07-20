@@ -1,5 +1,6 @@
 "use client";
 
+import { OwnerGate } from "@/components/app/role-context";
 import { StatusBadge } from "@/components/app/status-badge";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, RotateCw, ShieldOff } from "lucide-react";
@@ -57,41 +58,49 @@ export function CollectorActions({ collectorId, status }: CollectorActionsProps)
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={!!loading}
-          onClick={() => callFunction("collectors-rotate-token", "rotate")}
-          className="inline-flex items-center gap-2 rounded-lg border border-card px-4 py-2 text-sm hover:bg-card disabled:opacity-50"
-        >
-          {loading === "rotate" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RotateCw className="h-4 w-4" />
-          )}
-          Rotar token
-        </button>
-        <button
-          type="button"
-          disabled={!!loading}
-          onClick={() => {
-            if (confirm("¿Revocar este collector? Dejará de enviar datos.")) {
-              callFunction("collectors-revoke", "revoke");
-            }
-          }}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 text-red-400 px-4 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
-        >
-          {loading === "revoke" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <ShieldOff className="h-4 w-4" />
-          )}
-          Revocar collector
-        </button>
+    <OwnerGate
+      fallback={
+        <p className="text-sm text-muted">
+          Solo el propietario puede rotar tokens o revocar collectors.
+        </p>
+      }
+    >
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={!!loading}
+            onClick={() => callFunction("collectors-rotate-token", "rotate")}
+            className="inline-flex items-center gap-2 rounded-lg border border-card px-4 py-2 text-sm hover:bg-card disabled:opacity-50"
+          >
+            {loading === "rotate" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCw className="h-4 w-4" />
+            )}
+            Rotar token
+          </button>
+          <button
+            type="button"
+            disabled={!!loading}
+            onClick={() => {
+              if (confirm("¿Revocar este collector? Dejará de enviar datos.")) {
+                callFunction("collectors-revoke", "revoke");
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 text-red-400 px-4 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {loading === "revoke" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldOff className="h-4 w-4" />
+            )}
+            Revocar collector
+          </button>
+        </div>
+        {message && <p className="text-sm text-muted">{message}</p>}
       </div>
-      {message && <p className="text-sm text-muted">{message}</p>}
-    </div>
+    </OwnerGate>
   );
 }
 

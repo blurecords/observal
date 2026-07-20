@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { useRole } from "@/components/app/role-context";
 import { Loader2, PlugZap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,8 +21,11 @@ export function DeviceTestButton({
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
+  const { canWrite } = useRole();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  if (!canWrite) return null;
 
   async function requestTest() {
     setLoading(true);

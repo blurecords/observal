@@ -27,10 +27,13 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("organization_id")
+      .select("organization_id, role")
       .eq("id", user.id)
       .single();
     if (!profile) return jsonResponse({ error: "Profile not found" }, 404);
+    if (profile.role !== "owner") {
+      return jsonResponse({ error: "Solo el propietario puede revocar collectors" }, 403);
+    }
 
     const { collector_id } = await req.json();
     if (!collector_id) return jsonResponse({ error: "collector_id required" }, 400);

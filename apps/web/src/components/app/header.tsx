@@ -8,9 +8,10 @@ interface AppHeaderProps {
   title: string;
   subtitle?: string;
   userEmail?: string;
+  roleLabel?: string;
 }
 
-export function AppHeader({ title, subtitle, userEmail }: AppHeaderProps) {
+export function AppHeader({ title, subtitle, userEmail, roleLabel }: AppHeaderProps) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -26,6 +27,11 @@ export function AppHeader({ title, subtitle, userEmail }: AppHeaderProps) {
         {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
+        {roleLabel && (
+          <span className="text-xs px-2 py-1 rounded-full bg-blue-600/20 text-blue-300 hidden sm:inline">
+            {roleLabel}
+          </span>
+        )}
         {userEmail && (
           <span className="text-sm text-muted hidden sm:block">{userEmail}</span>
         )}

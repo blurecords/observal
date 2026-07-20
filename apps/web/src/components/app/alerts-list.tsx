@@ -4,6 +4,7 @@ import { ALERT_RULES, type AlertRuleKey } from "@/lib/alert-rules";
 import { relationName } from "@/lib/supabase/helpers";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { useRole } from "@/components/app/role-context";
 import { Check, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -29,6 +30,7 @@ const severityColors: Record<string, string> = {
 export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
   const supabase = createClient();
   const router = useRouter();
+  const { canWrite } = useRole();
   const [filter, setFilter] = useState<"all" | "open" | "resolved">("open");
   const [severity, setSeverity] = useState<string>("all");
 
@@ -137,7 +139,7 @@ export function AlertsList({ alerts }: { alerts: AlertRow[] }) {
                 </span>
               </div>
 
-              {!a.resolved && (
+              {!a.resolved && canWrite && (
                 <div className="flex gap-2 mt-4">
                   {!a.acknowledged && (
                     <button

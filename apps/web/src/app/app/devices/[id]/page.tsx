@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MetricsChart } from "@/components/charts/metrics-chart";
 import { DeviceTestButton } from "@/components/app/device-test-button";
 import { StatusBadge } from "@/components/app/status-badge";
+import { WriteGate } from "@/components/app/role-context";
 import { DEVICE_TYPES, PROFILE_LABELS } from "@/lib/av-catalog";
 import { createClient } from "@/lib/supabase/server";
 import { relationName } from "@/lib/supabase/helpers";
@@ -74,13 +75,15 @@ export default async function DeviceDetailPage({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <StatusBadge status={device.last_status} />
-            <Link
-              href={`/app/devices/${id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-card px-3 py-1.5 text-sm hover:bg-card"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Editar
-            </Link>
+            <WriteGate>
+              <Link
+                href={`/app/devices/${id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-card px-3 py-1.5 text-sm hover:bg-card"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </WriteGate>
           </div>
         </div>
       </div>

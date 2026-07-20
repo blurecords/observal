@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   BarChart3,
   Building2,
+  FileSpreadsheet,
   LayoutDashboard,
   Monitor,
   Radio,
@@ -21,6 +22,7 @@ const nav = [
   { href: "/app/devices", label: "Equipos AV", icon: Server },
   { href: "/app/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/app/alerts", label: "Alertas", icon: AlertTriangle },
+  { href: "/app/reports", label: "Informes", icon: FileSpreadsheet },
   { href: "/app/settings", label: "Ajustes", icon: Settings },
 ];
 

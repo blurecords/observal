@@ -8,7 +8,7 @@ import { Suspense, useState } from "react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/app";
+  const redirect = searchParams.get("next") ?? searchParams.get("redirect") ?? "/app";
   const error = searchParams.get("error");
   const [loading, setLoading] = useState(false);
   const supabase = createClient();

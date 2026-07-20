@@ -80,6 +80,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 | [DEV-SIN-PI.md](docs/DEV-SIN-PI.md) | Developers (no Pi yet) |
 | [GUIA-INTEGRADOR.md](docs/GUIA-INTEGRADOR.md) | AV integrators (Extron SIS, PJLink, SNMP) |
 | [GUIA-CLIENTE-MUSEO.md](docs/GUIA-CLIENTE-MUSEO.md) | Museum staff |
+| [BETA-PILOTO.md](docs/BETA-PILOTO.md) | Beta / primer cliente |
 | [DEPLOY-PRODUCTION.md](docs/DEPLOY-PRODUCTION.md) | DevOps |
 | [FACTORY-FLASH.md](docs/FACTORY-FLASH.md) | Manufacturing |
 
@@ -92,6 +93,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 - [x] Sprint 5 — Onboarding, demo mode, dev without Pi, device connection test
 - [x] Sprint 6 — Extron SIS, device editing, PJLink Class 2, metrics/dashboard upgrades
 - [x] Sprint 7 — NovaStar HTTP, credential encryption, metrics retention, AV alert rules
+- [x] Sprint 8 — Team roles, invites, reports export, multi-collector UI, beta guide
 
 ## License
 
