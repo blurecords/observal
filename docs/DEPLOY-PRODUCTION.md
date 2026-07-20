@@ -4,7 +4,8 @@
 
 - [ ] Migraciones aplicadas (`supabase db push`)
 - [ ] RLS auditado
-- [ ] Google OAuth: redirect `https://observal.app/auth/callback`
+- [ ] Google OAuth configurado — ver [AUTH-SETUP.md](./AUTH-SETUP.md)
+- [ ] Redirect URLs: `https://observal.app/auth/callback` y `http://localhost:3000/auth/callback`
 - [ ] Edge Functions desplegadas (todas)
 - [ ] Secrets: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`, `CRON_SECRET`, `CREDENTIALS_ENCRYPTION_KEY`
 - [ ] Cron `check-collectors` cada 5 min

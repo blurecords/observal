@@ -83,6 +83,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 | [GUIA-CLIENTE-MUSEO.md](docs/GUIA-CLIENTE-MUSEO.md) | Museum staff |
 | [BETA-PILOTO.md](docs/BETA-PILOTO.md) | Beta / primer cliente |
 | [DEPLOY-PRODUCTION.md](docs/DEPLOY-PRODUCTION.md) | DevOps |
+| [AUTH-SETUP.md](docs/AUTH-SETUP.md) | Google OAuth login |
 | [FACTORY-FLASH.md](docs/FACTORY-FLASH.md) | Manufacturing |
 
 ## Development phases

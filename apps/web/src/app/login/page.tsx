@@ -8,19 +8,41 @@ import { Suspense, useState } from "react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("next") ?? searchParams.get("redirect") ?? "/app";
-  const error = searchParams.get("error");
+  const redirect =
+    searchParams.get("next") ?? searchParams.get("redirect") ?? "/app";
+  const errorParam = searchParams.get("error");
   const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const supabase = createClient();
+
+  const displayError =
+    localError ??
+    (errorParam && errorParam !== "auth"
+      ? decodeURIComponent(errorParam)
+      : errorParam
+        ? "Error al iniciar sesión. Inténtalo de nuevo."
+        : null);
 
   async function signInWithGoogle() {
     setLoading(true);
-    await supabase.auth.signInWithOAuth({
+    setLocalError(null);
+
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${redirect}`,
+        redirectTo: callbackUrl,
+        queryParams: {
+          prompt: "select_account",
+        },
       },
     });
+
+    if (error) {
+      setLoading(false);
+      setLocalError(error.message);
+    }
   }
 
   return (
@@ -38,18 +60,19 @@ function LoginForm() {
           Monitoriza tus sistemas AV desde cualquier lugar.
         </p>
 
-        {error && (
+        {displayError && (
           <p className="mt-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400 text-center">
-            Error al iniciar sesión. Inténtalo de nuevo.
+            {displayError}
           </p>
         )}
 
         <button
+          type="button"
           onClick={signInWithGoogle}
           disabled={loading}
           className="mt-8 w-full flex items-center justify-center gap-3 rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 text-sm font-medium hover:bg-[#111827] transition-colors disabled:opacity-50"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
