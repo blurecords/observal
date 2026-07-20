@@ -250,7 +250,7 @@ export async function evaluateIngestAlerts(
   for (const hb of heartbeats) {
     const { data: device } = await supabase
       .from("av_devices")
-      .select("id, name, venue_id, room_id, critical")
+      .select("id, name, device_type, venue_id, room_id, critical")
       .eq("id", hb.device_id)
       .single();
     if (!device) continue;
@@ -314,9 +314,69 @@ export async function evaluateIngestAlerts(
           }
         }
       }
+
+      if (
+        device.device_type === "video_matrix" &&
+        (ctx.isOpen || preOpening) &&
+        (await isRuleEnabled(supabase, org.id, "matrix_offline"))
+      ) {
+        const severity = device.critical ? "critical" : "warning";
+        const alert = await createAlert(supabase, {
+          organization_id: org.id,
+          venue_id: device.venue_id,
+          room_id: device.room_id,
+          device_id: device.id,
+          collector_id: collectorId,
+          severity,
+          rule_key: "matrix_offline",
+          title: `Matriz ${device.name} offline`,
+          message: preOpening
+            ? `La matriz AV no responde y el venue abre en ${ctx.minutesUntilOpen} minutos.`
+            : "La matriz AV no responde durante horario activo.",
+        });
+        if (alert && "title" in alert) {
+          await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+        }
+      }
     } else if (hb.status === "online") {
       await resolveAlerts(supabase, org.id, "device_offline", device.id);
       await resolveAlerts(supabase, org.id, "critical_device_offline", device.id);
+      await resolveAlerts(supabase, org.id, "matrix_offline", device.id);
+    }
+  }
+
+  for (const m of metrics) {
+    if (
+      m.name === "projector.availability" &&
+      m.value === "error" &&
+      (await isRuleEnabled(supabase, org.id, "projector_availability_error"))
+    ) {
+      const { data: device } = await supabase
+        .from("av_devices")
+        .select("id, name, venue_id, room_id")
+        .eq("id", m.device_id)
+        .single();
+      if (!device) continue;
+
+      const alert = await createAlert(supabase, {
+        organization_id: org.id,
+        venue_id: device.venue_id,
+        room_id: device.room_id,
+        device_id: device.id,
+        collector_id: collectorId,
+        severity: "warning",
+        rule_key: "projector_availability_error",
+        title: `${device.name} — error de disponibilidad`,
+        message: "PJLink Class 2 reporta estado de error en el proyector.",
+      });
+      if (alert && "title" in alert) {
+        await sendAlertEmail(supabase, org, alert as { id: string; title: string; message?: string; severity: string });
+      }
+    } else if (
+      m.name === "projector.availability" &&
+      m.value === "available"
+    ) {
+      await resolveAlerts(supabase, org.id, "projector_availability_error", m.device_id);
     }
   }
 

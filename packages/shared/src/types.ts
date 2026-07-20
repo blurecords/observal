@@ -30,7 +30,8 @@ export type MonitoringProfile =
   | "snmp_generic"
   | "snmp_qsc"
   | "tcp_health"
-  | "extron_sis";
+  | "extron_sis"
+  | "novastar_http";
 
 export interface AvMetric {
   device_id: string;

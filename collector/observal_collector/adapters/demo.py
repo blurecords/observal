@@ -91,6 +91,30 @@ class DemoAdapter(BaseAdapter):
                 ]
             )
 
+        if online and profile == "novastar_http":
+            metrics.extend(
+                [
+                    {
+                        "name": "novastar.brightness",
+                        "value": rng.randint(40, 100),
+                        "status": status,
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                    },
+                    {
+                        "name": "novastar.temperature",
+                        "value": round(rng.uniform(35, 55), 1),
+                        "status": status,
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                    },
+                    {
+                        "name": "novastar.status",
+                        "value": "running",
+                        "status": status,
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                    },
+                ]
+            )
+
         if online and profile.startswith("snmp"):
             metrics.append(
                 {

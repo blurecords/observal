@@ -6,8 +6,9 @@
 - [ ] RLS auditado
 - [ ] Google OAuth: redirect `https://observal.app/auth/callback`
 - [ ] Edge Functions desplegadas (todas)
-- [ ] Secrets: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`, `CRON_SECRET`
+- [ ] Secrets: `RESEND_API_KEY`, `ALERTS_FROM_EMAIL`, `APP_URL`, `CRON_SECRET`, `CREDENTIALS_ENCRYPTION_KEY`
 - [ ] Cron `check-collectors` cada 5 min
+- [ ] Cron `purge-metrics` diario (`0 3 * * *`)
 - [ ] Backups activados (plan Pro recomendado)
 
 ## Edge Functions
@@ -20,6 +21,13 @@ supabase functions deploy collector-ingest
 supabase functions deploy check-collectors
 supabase functions deploy collectors-revoke
 supabase functions deploy collectors-rotate-token
+supabase functions deploy purge-metrics
+```
+
+Generar clave de cifrado de credenciales (misma en Vercel y Supabase):
+
+```bash
+openssl rand -base64 32
 ```
 
 ## Vercel (web)
@@ -30,6 +38,7 @@ supabase functions deploy collectors-rotate-token
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_APP_URL=https://observal.app`
+   - `CREDENTIALS_ENCRYPTION_KEY` (misma clave que en Supabase Edge Functions)
 4. Dominio custom: `observal.app`
 
 ## DNS Hostinger

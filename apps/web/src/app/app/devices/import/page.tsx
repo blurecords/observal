@@ -1,5 +1,6 @@
 "use client";
 
+import { createDevicesBatch } from "@/actions/devices";
 import { DEVICE_TYPES, PROFILE_LABELS, type MonitoringProfile } from "@/lib/av-catalog";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, FileSpreadsheet, Loader2, Upload } from "lucide-react";
@@ -9,7 +10,8 @@ import { useEffect, useState } from "react";
 
 const CSV_TEMPLATE = `name,device_type,host,profile,brand,model,critical
 "Proyector Galería 1",projector,192.168.10.10,pjlink_class1,Panasonic,PT-RZ990,yes
-"Matriz AV",video_matrix,192.168.10.20,extron_sis,Extron,DTP CrossPoint 84,no`;
+"Matriz AV",video_matrix,192.168.10.20,extron_sis,Extron,DTP CrossPoint 84,no
+"Procesador LED",led_processor,192.168.10.30,novastar_http,NovaStar,MCTRL4K,no`;
 
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.trim().split("\n");
@@ -106,6 +108,10 @@ export default function ImportDevicesPage() {
         metadata.sis_port = parseInt(row.sis_port || "23", 10) || 23;
         if (row.sis_password) metadata.sis_password = row.sis_password;
       }
+      if (profile === "novastar_http") {
+        metadata.novastar_port = parseInt(row.novastar_port || "8001", 10) || 8001;
+        metadata.novastar_tcp_port = parseInt(row.novastar_tcp_port || "5200", 10) || 5200;
+      }
 
       return {
         organization_id: orgId,
@@ -123,11 +129,11 @@ export default function ImportDevicesPage() {
       };
     });
 
-    const { error: insertError } = await supabase.from("av_devices").insert(inserts);
+    const result = await createDevicesBatch(inserts);
     setLoading(false);
 
-    if (insertError) {
-      setError(insertError.message);
+    if ("error" in result && result.error) {
+      setError(result.error);
       return;
     }
 

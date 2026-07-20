@@ -1,13 +1,16 @@
 "use client";
 
+import { createDevice } from "@/actions/devices";
 import { createClient } from "@/lib/supabase/client";
 import {
   BRAND_SUGGESTIONS,
   DEFAULT_TCP_PORTS,
+  DEFAULT_NOVASTAR_TCP_PORT,
   DEVICE_TYPES,
   type DeviceType,
   getDeviceType,
   PROFILE_LABELS,
+  profileNeedsNovaStar,
   profileNeedsPjlink,
   profileNeedsSis,
   profileNeedsSnmp,
@@ -62,6 +65,8 @@ export default function AddDevicePage() {
   const [tcpPort, setTcpPort] = useState("80");
   const [sisPort, setSisPort] = useState("23");
   const [sisPassword, setSisPassword] = useState("");
+  const [novastarPort, setNovastarPort] = useState("8001");
+  const [novastarTcpPort, setNovastarTcpPort] = useState(String(DEFAULT_NOVASTAR_TCP_PORT));
   const [venueId, setVenueId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [collectorId, setCollectorId] = useState("");
@@ -133,8 +138,12 @@ export default function AddDevicePage() {
       metadata.sis_port = parseInt(sisPort, 10) || 23;
       if (sisPassword) metadata.sis_password = sisPassword;
     }
+    if (profileNeedsNovaStar(profile)) {
+      metadata.novastar_port = parseInt(novastarPort, 10) || 8001;
+      metadata.novastar_tcp_port = parseInt(novastarTcpPort, 10) || DEFAULT_NOVASTAR_TCP_PORT;
+    }
 
-    const { error: insertError } = await supabase.from("av_devices").insert({
+    const result = await createDevice({
       organization_id: orgId,
       venue_id: venueId,
       room_id: roomId || null,
@@ -152,8 +161,8 @@ export default function AddDevicePage() {
 
     setLoading(false);
 
-    if (insertError) {
-      setError(insertError.message);
+    if ("error" in result && result.error) {
+      setError(result.error);
       return;
     }
 
@@ -322,6 +331,28 @@ export default function AddDevicePage() {
                   value={sisPassword}
                   onChange={(e) => setSisPassword(e.target.value)}
                   className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+            </>
+          )}
+          {profileNeedsNovaStar(profile) && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-2">Puerto HTTP NovaStar</label>
+                <input
+                  value={novastarPort}
+                  onChange={(e) => setNovastarPort(e.target.value)}
+                  placeholder="8001"
+                  className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Puerto TCP fallback</label>
+                <input
+                  value={novastarTcpPort}
+                  onChange={(e) => setNovastarTcpPort(e.target.value)}
+                  placeholder="5200"
+                  className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
             </>

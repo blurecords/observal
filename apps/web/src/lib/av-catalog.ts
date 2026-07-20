@@ -20,7 +20,8 @@ export type MonitoringProfile =
   | "snmp_generic"
   | "snmp_qsc"
   | "tcp_health"
-  | "extron_sis";
+  | "extron_sis"
+  | "novastar_http";
 
 export interface DeviceTypeOption {
   id: DeviceType;
@@ -42,8 +43,8 @@ export const DEVICE_TYPES: DeviceTypeOption[] = [
     id: "led_processor",
     label: "Procesador LED",
     icon: "🖥️",
-    defaultProfile: "tcp_health",
-    suggestedProfiles: ["tcp_health", "snmp_generic", "ping"],
+    defaultProfile: "novastar_http",
+    suggestedProfiles: ["novastar_http", "tcp_health", "snmp_generic", "ping"],
   },
   {
     id: "led_panel",
@@ -132,6 +133,7 @@ export const PROFILE_LABELS: Record<MonitoringProfile, string> = {
   snmp_qsc: "SNMP QSC / amplificadores",
   tcp_health: "Puerto TCP",
   extron_sis: "Extron SIS (matrices / control)",
+  novastar_http: "NovaStar HTTP (procesadores LED)",
 };
 
 export const BRAND_SUGGESTIONS: Partial<Record<DeviceType, string[]>> = {
@@ -164,13 +166,19 @@ export function profileNeedsSis(profile: MonitoringProfile) {
   return profile === "extron_sis";
 }
 
+export function profileNeedsNovaStar(profile: MonitoringProfile) {
+  return profile === "novastar_http";
+}
+
 export const DEFAULT_TCP_PORTS: Partial<Record<DeviceType, number>> = {
   projector: 4352,
-  led_processor: 5200,
+  led_processor: 8001,
   video_matrix: 23,
   media_player: 80,
   show_controller: 8080,
 };
+
+export const DEFAULT_NOVASTAR_TCP_PORT = 5200;
 
 export const STATUS_LABELS: Record<string, string> = {
   online: "Online",

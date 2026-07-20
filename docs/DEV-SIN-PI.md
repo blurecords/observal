@@ -70,7 +70,7 @@ En `/app/devices/[id]` pulsa **Probar ahora**. Marca `test_requested_at` en la b
 
 En modo demo la prueba siempre refleja el estado simulado (online/offline sintético).
 
-Perfiles soportados en demo: `ping`, `pjlink_class1/2`, `snmp_*`, `tcp_health`, `extron_sis`.
+Perfiles soportados en demo: `ping`, `pjlink_class1/2`, `snmp_*`, `tcp_health`, `extron_sis`, `novastar_http`.
 
 ## 7. Migraciones y Edge Functions pendientes
 

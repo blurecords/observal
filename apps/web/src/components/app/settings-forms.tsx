@@ -14,6 +14,7 @@ export function NotificationSettings() {
   const [enabled, setEnabled] = useState(true);
   const [lampHours, setLampHours] = useState(1800);
   const [preOpening, setPreOpening] = useState(30);
+  const [retentionDays, setRetentionDays] = useState(90);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function NotificationSettings() {
       const { data: org } = await supabase
         .from("organizations")
         .select(
-          "notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes",
+          "notification_email, alerts_email_enabled, lamp_hours_warning, pre_opening_alert_minutes, metrics_retention_days",
         )
         .eq("id", profile.organization_id)
         .single();
@@ -38,6 +39,7 @@ export function NotificationSettings() {
         setEnabled(org.alerts_email_enabled ?? true);
         setLampHours(org.lamp_hours_warning ?? 1800);
         setPreOpening(org.pre_opening_alert_minutes ?? 30);
+        setRetentionDays(org.metrics_retention_days ?? 90);
       }
       setLoading(false);
     }
@@ -55,6 +57,7 @@ export function NotificationSettings() {
         alerts_email_enabled: enabled,
         lamp_hours_warning: lampHours,
         pre_opening_alert_minutes: preOpening,
+        metrics_retention_days: retentionDays,
       })
       .eq("id", orgId);
     setSaving(false);
@@ -115,6 +118,22 @@ export function NotificationSettings() {
             onChange={(e) => setPreOpening(parseInt(e.target.value, 10) || 0)}
             className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Retención de métricas (días)
+          </label>
+          <input
+            type="number"
+            min={7}
+            max={365}
+            value={retentionDays}
+            onChange={(e) => setRetentionDays(parseInt(e.target.value, 10) || 90)}
+            className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <p className="text-xs text-muted mt-1">
+            Datos más antiguos se purgan automáticamente cada noche.
+          </p>
         </div>
       </div>
 

@@ -2,7 +2,9 @@ export type AlertRuleKey =
   | "device_offline"
   | "critical_device_offline"
   | "projector_lamp_hours"
-  | "collector_offline";
+  | "collector_offline"
+  | "matrix_offline"
+  | "projector_availability_error";
 
 export const ALERT_RULES: Record<
   AlertRuleKey,
@@ -28,6 +30,18 @@ export const ALERT_RULES: Record<
     label: "Collector desconectado",
     description: "La Raspberry Pi no se comunica con Observal.",
     defaultSeverity: "critical",
+  },
+  matrix_offline: {
+    label: "Matriz AV offline en horario activo",
+    description:
+      "Una matriz de vídeo deja de responder durante horario de apertura o pre-apertura.",
+    defaultSeverity: "warning",
+  },
+  projector_availability_error: {
+    label: "Proyector con error de disponibilidad",
+    description:
+      "PJLink Class 2 reporta estado de error o indisponibilidad en el proyector.",
+    defaultSeverity: "warning",
   },
 };
 

@@ -23,6 +23,7 @@ Comunidad recomendada: una **custom** distinta de `public`.
 | `pjlink_class1` | Proyectores (Class 1) |
 | `pjlink_class2` | Proyectores Class 2 (+ input, availability) |
 | `extron_sis` | Matrices y procesadores Extron (SIS/TCP 23) |
+| `novastar_http` | Procesadores LED NovaStar (HTTP + TCP 5200) |
 | `snmp_generic` | Kramer, DSP, switches AV |
 | `snmp_qsc` | Amplificadores QSC |
 | `tcp_health` | Procesadores LED, media players |

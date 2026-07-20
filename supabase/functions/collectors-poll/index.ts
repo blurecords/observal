@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { resolveCollectorCredentials } from "../_shared/credentials-crypto.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
@@ -49,7 +50,7 @@ Deno.serve(async (req) => {
     const { data: devices } = await supabase
       .from("av_devices")
       .select(
-        "id, name, host, device_type, profile, brand, model, room_id, critical, enabled, metadata, test_requested_at",
+        "id, name, host, device_type, profile, brand, model, room_id, critical, enabled, metadata, credentials_encrypted, test_requested_at",
       )
       .eq("collector_id", collector.id)
       .eq("enabled", true);
@@ -57,19 +58,29 @@ Deno.serve(async (req) => {
     const config = {
       poll_interval_sec: 60,
       send_interval_sec: 60,
-      devices: (devices ?? []).map((d) => ({
-        id: d.id,
-        name: d.name,
-        host: d.host,
-        device_type: d.device_type,
-        profile: d.profile,
-        brand: d.brand,
-        model: d.model,
-        room_id: d.room_id,
-        critical: d.critical,
-        metadata: d.metadata ?? {},
-        test_requested_at: d.test_requested_at,
-      })),
+      devices: await Promise.all(
+        (devices ?? []).map(async (d) => {
+          const credentials = await resolveCollectorCredentials(
+            (d.metadata ?? {}) as Record<string, unknown>,
+            d.credentials_encrypted,
+          );
+          const { credentials_encrypted: _enc, ...rest } = d;
+          return {
+            id: rest.id,
+            name: rest.name,
+            host: rest.host,
+            device_type: rest.device_type,
+            profile: rest.profile,
+            brand: rest.brand,
+            model: rest.model,
+            room_id: rest.room_id,
+            critical: rest.critical,
+            metadata: rest.metadata ?? {},
+            credentials,
+            test_requested_at: rest.test_requested_at,
+          };
+        }),
+      ),
       ...(configRow?.config_json ?? {}),
     };
 

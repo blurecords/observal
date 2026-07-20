@@ -71,6 +71,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 | `check-collectors` | Cron: offline collectors |
 | `collectors-revoke` | Revoke stolen/lost Pi |
 | `collectors-rotate-token` | Rotate ingest token |
+| `purge-metrics` | Cron: delete old metrics by retention |
 
 ## Documentation
 
@@ -90,6 +91,7 @@ See [docs/DEV-SIN-PI.md](docs/DEV-SIN-PI.md) for the full dev workflow without h
 - [x] Sprint 4 — Production hardening, factory flash, beta docs
 - [x] Sprint 5 — Onboarding, demo mode, dev without Pi, device connection test
 - [x] Sprint 6 — Extron SIS, device editing, PJLink Class 2, metrics/dashboard upgrades
+- [x] Sprint 7 — NovaStar HTTP, credential encryption, metrics retention, AV alert rules
 
 ## License
 

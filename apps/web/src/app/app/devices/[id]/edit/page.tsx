@@ -1,12 +1,15 @@
 "use client";
 
+import { updateDevice } from "@/actions/devices";
 import { createClient } from "@/lib/supabase/client";
 import {
   BRAND_SUGGESTIONS,
   DEFAULT_TCP_PORTS,
+  DEFAULT_NOVASTAR_TCP_PORT,
   DEVICE_TYPES,
   getDeviceType,
   PROFILE_LABELS,
+  profileNeedsNovaStar,
   profileNeedsPjlink,
   profileNeedsSis,
   profileNeedsSnmp,
@@ -43,6 +46,8 @@ export default function EditDevicePage() {
   const [tcpPort, setTcpPort] = useState("80");
   const [sisPort, setSisPort] = useState("23");
   const [sisPassword, setSisPassword] = useState("");
+  const [novastarPort, setNovastarPort] = useState("8001");
+  const [novastarTcpPort, setNovastarTcpPort] = useState(String(DEFAULT_NOVASTAR_TCP_PORT));
   const [venueId, setVenueId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [collectorId, setCollectorId] = useState("");
@@ -83,10 +88,12 @@ export default function EditDevicePage() {
       setCritical(d.critical ?? false);
       setEnabled(d.enabled ?? true);
       setSnmpCommunity(String(meta.snmp_community ?? "public"));
-      setPjlinkPassword(String(meta.pjlink_password ?? ""));
+      setPjlinkPassword("");
       setTcpPort(String(meta.tcp_port ?? DEFAULT_TCP_PORTS[d.device_type as DeviceType] ?? 80));
       setSisPort(String(meta.sis_port ?? 23));
-      setSisPassword(String(meta.sis_password ?? ""));
+      setSisPassword("");
+      setNovastarPort(String(meta.novastar_port ?? 8001));
+      setNovastarTcpPort(String(meta.novastar_tcp_port ?? DEFAULT_NOVASTAR_TCP_PORT));
 
       setVenues(v.data ?? []);
       setRooms(r.data ?? []);
@@ -124,28 +131,29 @@ export default function EditDevicePage() {
       metadata.sis_port = parseInt(sisPort, 10) || 23;
       if (sisPassword) metadata.sis_password = sisPassword;
     }
+    if (profileNeedsNovaStar(profile)) {
+      metadata.novastar_port = parseInt(novastarPort, 10) || 8001;
+      metadata.novastar_tcp_port = parseInt(novastarTcpPort, 10) || DEFAULT_NOVASTAR_TCP_PORT;
+    }
 
-    const { error: updateError } = await supabase
-      .from("av_devices")
-      .update({
-        name: name.trim(),
-        device_type: deviceType,
-        brand: brand || null,
-        model: model || null,
-        host,
-        profile,
-        venue_id: venueId,
-        room_id: roomId || null,
-        collector_id: collectorId,
-        critical,
-        enabled,
-        metadata,
-      })
-      .eq("id", id);
+    const result = await updateDevice(id, {
+      name: name.trim(),
+      device_type: deviceType,
+      brand: brand || null,
+      model: model || null,
+      host,
+      profile,
+      venue_id: venueId,
+      room_id: roomId || null,
+      collector_id: collectorId,
+      critical,
+      enabled,
+      metadata,
+    });
 
     setSaving(false);
-    if (updateError) {
-      setError(updateError.message);
+    if ("error" in result && result.error) {
+      setError(result.error);
       return;
     }
 
@@ -278,7 +286,9 @@ export default function EditDevicePage() {
 
         {profileNeedsPjlink(profile) && (
           <div>
-            <label className="block text-sm font-medium mb-2">Contraseña PJLink</label>
+            <label className="block text-sm font-medium mb-2">
+              Contraseña PJLink (dejar vacío para no cambiar)
+            </label>
             <input
               type="password"
               value={pjlinkPassword}
@@ -310,12 +320,35 @@ export default function EditDevicePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Contraseña SIS</label>
+              <label className="block text-sm font-medium mb-2">
+                Contraseña SIS (dejar vacío para no cambiar)
+              </label>
               <input
                 type="password"
                 value={sisPassword}
                 onChange={(e) => setSisPassword(e.target.value)}
                 className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3"
+              />
+            </div>
+          </>
+        )}
+
+        {profileNeedsNovaStar(profile) && (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-2">Puerto HTTP NovaStar</label>
+              <input
+                value={novastarPort}
+                onChange={(e) => setNovastarPort(e.target.value)}
+                className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Puerto TCP fallback</label>
+              <input
+                value={novastarTcpPort}
+                onChange={(e) => setNovastarTcpPort(e.target.value)}
+                className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono"
               />
             </div>
           </>
