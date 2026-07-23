@@ -8,11 +8,13 @@ import httpx
 
 
 class CloudClient:
-    def __init__(self, supabase_url: str, hardware_id: str) -> None:
+    def __init__(self, supabase_url: str, hardware_id: str, supabase_anon_key: str) -> None:
         self.base = supabase_url.rstrip("/")
         self.hardware_id = hardware_id
         self.headers = {
             "Content-Type": "application/json",
+            "apikey": supabase_anon_key,
+            "Authorization": f"Bearer {supabase_anon_key}",
             "x-collector-hardware-id": hardware_id,
         }
 
@@ -20,6 +22,7 @@ class CloudClient:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
                 f"{self.base}/functions/v1/collectors-announce",
+                headers=self.headers,
                 json={
                     "hardware_id": self.hardware_id,
                     "firmware_version": firmware_version,

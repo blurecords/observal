@@ -26,10 +26,13 @@ class CollectorAgent:
     def __init__(self) -> None:
         self.data_dir = Path(os.environ.get("OBSERVAL_DATA_DIR", "/var/lib/observal"))
         self.supabase_url = os.environ["SUPABASE_URL"]
+        supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+        if not supabase_anon_key:
+            raise RuntimeError("SUPABASE_ANON_KEY is required in observal.env")
         hardware_id, device_secret = load_device_identity(str(self.data_dir))
         self.hardware_id = hardware_id
         self.vault = Vault(self.data_dir, device_secret)
-        self.cloud = CloudClient(self.supabase_url, hardware_id)
+        self.cloud = CloudClient(self.supabase_url, hardware_id, supabase_anon_key)
         self.secrets = self.vault.load_secrets()
         self.collector_id: str | None = self.secrets.get("collector_id")
         self.ingest_token: str | None = self.secrets.get("ingest_token")

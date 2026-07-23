@@ -33,7 +33,7 @@ python3 -m venv "$INSTALL_DIR/venv"
 echo "==> Config"
 if [[ ! -f "$CONFIG_DIR/observal.env" ]]; then
   cp "$REPO_DIR/collector/config/observal.env.example" "$CONFIG_DIR/observal.env"
-  echo "Edit $CONFIG_DIR/observal.env with your SUPABASE_URL"
+  echo "Edit $CONFIG_DIR/observal.env with SUPABASE_URL and SUPABASE_ANON_KEY"
 fi
 
 if [[ ! -f "$CONFIG_DIR/identity.json" ]]; then
@@ -59,7 +59,7 @@ systemctl enable observal-collector.service
 
 echo ""
 echo "Installation complete."
-echo "  1. Set SUPABASE_URL in $CONFIG_DIR/observal.env"
+echo "  1. Set SUPABASE_URL and SUPABASE_ANON_KEY in $CONFIG_DIR/observal.env"
 echo "  2. Place identity.json in $CONFIG_DIR/identity.json (from factory)"
 echo "  3. Fix permissions after copying identity:"
 echo "       sudo chown root:$OBSERVAL_USER $CONFIG_DIR $CONFIG_DIR/*"
