@@ -47,13 +47,15 @@ Deno.serve(async (req) => {
       .eq("collector_id", collector.id)
       .maybeSingle();
 
-    const { data: devices } = await supabase
+    const { data: devices, error: devicesError } = await supabase
       .from("av_devices")
       .select(
         "id, name, host, device_type, profile, brand, model, room_id, critical, enabled, metadata, credentials_encrypted, test_requested_at",
       )
       .eq("collector_id", collector.id)
       .eq("enabled", true);
+
+    if (devicesError) throw devicesError;
 
     const config = {
       poll_interval_sec: 60,

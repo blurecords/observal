@@ -124,6 +124,37 @@ export async function updateDevice(id: string, input: Partial<DeviceInput>) {
   return { ok: true };
 }
 
+export async function deleteDevice(id: string) {
+  const actor = await getActor();
+  if (!actor) return { error: "No autenticado" };
+  const { supabase } = actor;
+
+  const { data: device } = await supabase
+    .from("av_devices")
+    .select("id, name, organization_id")
+    .eq("id", id)
+    .eq("organization_id", actor.orgId)
+    .single();
+
+  if (!device) return { error: "Equipo no encontrado" };
+
+  const { error } = await supabase.from("av_devices").delete().eq("id", id);
+
+  if (error) return { error: error.message };
+
+  await logAudit(supabase, {
+    organizationId: actor.orgId,
+    userId: actor.userId,
+    action: "device.delete",
+    entityType: "av_device",
+    entityId: id,
+    summary: `Equipo eliminado: ${device.name}`,
+  });
+
+  revalidatePath("/app/devices");
+  return { ok: true };
+}
+
 export async function createDevicesBatch(inputs: DeviceInput[]) {
   const actor = await getActor();
   if (!actor) return { error: "No autenticado" };

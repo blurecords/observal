@@ -137,6 +137,23 @@ class CollectorAgent:
             for m in result.metrics:
                 metrics.append({**m, "device_id": device["id"]})
 
+            if result.metrics:
+                log.info(
+                    "Polled %s (%s): %s — %d metrics",
+                    device.get("name"),
+                    device.get("profile"),
+                    result.status,
+                    len(result.metrics),
+                )
+            else:
+                log.warning(
+                    "Polled %s (%s): %s — 0 metrics%s",
+                    device.get("name"),
+                    device.get("profile"),
+                    result.status,
+                    f" — {result.error}" if result.error else "",
+                )
+
             if device.get("test_requested_at"):
                 ok = result.status == "online" and not result.error
                 msg = (

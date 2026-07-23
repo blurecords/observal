@@ -1,6 +1,6 @@
 "use client";
 
-import { updateDevice } from "@/actions/devices";
+import { deleteDevice, updateDevice } from "@/actions/devices";
 import { createClient } from "@/lib/supabase/client";
 import {
   BRAND_SUGGESTIONS,
@@ -58,6 +58,7 @@ export default function EditDevicePage() {
   const [collectorId, setCollectorId] = useState("");
   const [critical, setCritical] = useState(false);
   const [enabled, setEnabled] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -178,7 +179,30 @@ export default function EditDevicePage() {
 
   async function handleDisable() {
     if (!confirm("¿Desactivar este equipo? Dejará de monitorizarse.")) return;
-    await supabase.from("av_devices").update({ enabled: false }).eq("id", id);
+    await updateDevice(id, { enabled: false });
+    router.push("/app/devices");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (
+      !confirm(
+        "¿Eliminar este equipo permanentemente? Se borrarán también sus métricas. Esta acción no se puede deshacer.",
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+    const result = await deleteDevice(id);
+    setDeleting(false);
+
+    if ("error" in result && result.error) {
+      setError(result.error);
+      return;
+    }
+
     router.push("/app/devices");
     router.refresh();
   }
@@ -413,6 +437,10 @@ export default function EditDevicePage() {
                 </label>
               </div>
             </div>
+            <p className="text-xs text-muted">
+              RouterOS 7: www-ssl (443) + TLS 1.2. Usuario con rest-api. Si no hay métricas,
+              reintroduce la contraseña y guarda.
+            </p>
           </>
         )}
 
@@ -502,10 +530,19 @@ export default function EditDevicePage() {
           <button
             type="button"
             onClick={handleDisable}
-            className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10"
+            className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/30 px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10"
           >
             <Trash2 className="h-4 w-4" />
-            Desactivar equipo
+            Desactivar
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Eliminar
           </button>
         </div>
       </form>

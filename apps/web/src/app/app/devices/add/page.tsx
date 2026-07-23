@@ -125,6 +125,11 @@ export default function AddDevicePage() {
       return;
     }
 
+    if (profileNeedsMikrotikApi(profile) && !mikrotikPassword) {
+      setError("La contraseña RouterOS es obligatoria para el perfil MikroTik API.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -413,7 +418,8 @@ export default function AddDevicePage() {
                 </div>
               </div>
               <p className="text-xs text-muted">
-                Activa REST en el router: IP → Services → www-ssl (puerto 443) o www (HTTP).
+                RouterOS 7: activa www-ssl (443) y usuario con permiso rest-api. REST por HTTP
+                solo desde v7.9 — usa HTTPS. Reintroduce la contraseña al guardar.
               </p>
             </>
           )}

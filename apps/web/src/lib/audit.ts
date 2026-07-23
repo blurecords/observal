@@ -5,6 +5,7 @@ export type AuditAction =
   | "device.update"
   | "device.import"
   | "device.disable"
+  | "device.delete"
   | "team.invite"
   | "team.revoke_invite"
   | "team.role_change"
@@ -52,6 +53,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   "device.update": "Equipo actualizado",
   "device.import": "Importación CSV",
   "device.disable": "Equipo desactivado",
+  "device.delete": "Equipo eliminado",
   "team.invite": "Invitación enviada",
   "team.revoke_invite": "Invitación cancelada",
   "team.role_change": "Rol cambiado",

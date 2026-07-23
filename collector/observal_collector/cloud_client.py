@@ -38,7 +38,13 @@ class CloudClient:
                 f"{self.base}/functions/v1/collectors-poll",
                 headers=self.headers,
             )
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                detail = resp.text[:500]
+                raise httpx.HTTPStatusError(
+                    f"{resp.status_code} {resp.reason_phrase}: {detail}",
+                    request=resp.request,
+                    response=resp,
+                )
             return resp.json()
 
     async def ingest(

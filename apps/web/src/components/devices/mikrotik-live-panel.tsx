@@ -12,9 +12,17 @@ import { useCallback, useEffect, useState } from "react";
 
 interface MikrotikLivePanelProps {
   deviceId: string;
+  lastTestOk?: boolean | null;
+  lastTestMessage?: string | null;
+  lastTestAt?: string | null;
 }
 
-export function MikrotikLivePanel({ deviceId }: MikrotikLivePanelProps) {
+export function MikrotikLivePanel({
+  deviceId,
+  lastTestOk,
+  lastTestMessage,
+  lastTestAt,
+}: MikrotikLivePanelProps) {
   const [snapshot, setSnapshot] = useState<RouterLiveSnapshot | null>(null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,10 +106,24 @@ export function MikrotikLivePanel({ deviceId }: MikrotikLivePanelProps) {
       )}
 
       {!error && !loading && !snapshot?.updatedAt && (
-        <div className="rounded-xl border border-card bg-card p-8 text-center text-sm text-muted">
-          Esperando la primera lectura del collector. Comprueba que el perfil sea{" "}
-          <strong>MikroTik RouterOS API</strong> o <strong>MikroTik SNMP</strong> y que el Pi
-          pueda alcanzar el router.
+        <div className="rounded-xl border border-card bg-card p-6 text-sm text-muted space-y-3">
+          <p>Esperando la primera lectura del collector.</p>
+          {lastTestAt && (
+            <p className={lastTestOk ? "text-green-400" : "text-red-400"}>
+              Última prueba: {lastTestOk ? "OK" : "Fallida"}
+              {lastTestMessage ? ` — ${lastTestMessage}` : ""}
+            </p>
+          )}
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Actualiza el collector en la Pi (<code className="text-xs">mikrotik.py</code> + reinicio).</li>
+            <li>En MikroTik: activa <strong>www-ssl</strong> (puerto 443) y usuario con grupo <strong>read</strong>.</li>
+            <li>En Observal → Editar: vuelve a guardar usuario y contraseña RouterOS.</li>
+            <li>
+              <code className="text-xs">CREDENTIALS_ENCRYPTION_KEY</code> debe estar en Vercel y en Supabase Edge
+              Functions.
+            </li>
+            <li>Pulsa <strong>Probar ahora</strong> y revisa <code className="text-xs">journalctl -u observal-collector -f</code> en la Pi.</li>
+          </ul>
         </div>
       )}
 

@@ -235,7 +235,16 @@ async def poll_device(device: dict, credentials: dict | None = None) -> PollResu
         return await DemoAdapter().poll(host, device, creds)
 
     profile = device.get("profile", "ping")
-    adapter = ADAPTERS.get(profile, ADAPTERS["ping"])
+    adapter = ADAPTERS.get(profile)
+    if adapter is None:
+        return PollResult(
+            status="offline",
+            error=(
+                f"Perfil '{profile}' no soportado en este collector. "
+                "Actualiza el agente en la Pi: git pull + copiar adapters/mikrotik.py"
+            ),
+        )
+
     creds = _device_credentials(device, credentials or device.get("credentials"))
     host = str(device["host"]).split("/")[0]
     return await adapter.poll(host, device, creds)

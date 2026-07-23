@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import ssl
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -27,6 +28,22 @@ IF_OPER = "1.3.6.1.2.1.2.2.1.8"
 IF_DESCR = "1.3.6.1.2.1.2.2.1.2"
 
 
+def _offline_result(error: str) -> PollResult:
+    ts = datetime.now(timezone.utc).isoformat()
+    return PollResult(
+        status="offline",
+        error=error,
+        metrics=[
+            {
+                "name": "device.reachable",
+                "value": False,
+                "status": "offline",
+                "ts": ts,
+            }
+        ],
+    )
+
+
 def _parse_routeros_uptime(value: str | int | float) -> int | None:
     if isinstance(value, (int, float)):
         return int(value)
@@ -41,6 +58,32 @@ def _parse_routeros_uptime(value: str | int | float) -> int | None:
     return total or None
 
 
+def _mikrotik_tls12_context() -> ssl.SSLContext:
+    """Many RouterOS devices reject TLS 1.3 from OpenSSL 3 clients."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+    return ctx
+
+
+def _is_tls_or_connect_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return any(
+        token in text
+        for token in (
+            "handshake",
+            "ssl",
+            "tls",
+            "certificate",
+            "connect",
+            "connection refused",
+            "timed out",
+        )
+    )
+
+
 class MikrotikApiAdapter(BaseAdapter):
     profile = "mikrotik_api"
 
@@ -50,6 +93,10 @@ class MikrotikApiAdapter(BaseAdapter):
     async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
         username = credentials.get("mikrotik_username") or credentials.get("username") or "admin"
         password = credentials.get("mikrotik_password") or credentials.get("password") or ""
+        if not password:
+            return _offline_result(
+                "Falta contraseña MikroTik (mikrotik_password). Edita el equipo y guárdala de nuevo.",
+            )
         use_https = str(
             credentials.get("mikrotik_use_https")
             or device.get("metadata", {}).get("mikrotik_use_https")
@@ -74,10 +121,10 @@ class MikrotikApiAdapter(BaseAdapter):
                 device.get("id", host),
             )
         except Exception as exc:
-            return PollResult(status="offline", error=str(exc))
+            return _offline_result(str(exc))
 
         if not data.get("reachable"):
-            return PollResult(status="offline", error=data.get("error", "RouterOS API unreachable"))
+            return _offline_result(data.get("error", "RouterOS API unreachable"))
 
         ts = datetime.now(timezone.utc).isoformat()
         metrics: list[dict[str, Any]] = [
@@ -196,21 +243,80 @@ class MikrotikApiAdapter(BaseAdapter):
         use_https: bool,
         device_key: str,
     ) -> dict[str, Any]:
-        scheme = "https" if use_https else "http"
-        base = f"{scheme}://{host}:{port}/rest"
         auth = httpx.BasicAuth(username, password)
+        headers = {"Accept": "application/json"}
+        attempts: list[tuple[str, int, bool | ssl.SSLContext]] = []
 
-        with httpx.Client(verify=False, timeout=8.0, auth=auth) as client:
-            resource = self._rest_get(client, f"{base}/system/resource")
-            if resource is None:
-                return {"reachable": False, "error": "No response from /system/resource"}
+        if use_https:
+            # REST on www (HTTP) exists only from RouterOS 7.9+. Prefer www-ssl + TLS 1.2.
+            attempts.append(("https", port, _mikrotik_tls12_context()))
+            if port != 443:
+                attempts.append(("https", 443, _mikrotik_tls12_context()))
+        else:
+            attempts.append(("http", port, False))
+            if port != 80:
+                attempts.append(("http", 80, False))
 
-            identity_rows = self._rest_get(client, f"{base}/system/identity") or []
-            interfaces = self._rest_get(client, f"{base}/interface") or []
-            addresses = self._rest_get(client, f"{base}/ip/address") or []
-            routes = self._rest_get(client, f"{base}/ip/route") or []
-            leases = self._rest_get(client, f"{base}/ip/dhcp-server/lease") or []
+        seen: set[tuple[str, int]] = set()
+        errors: list[str] = []
 
+        for scheme, attempt_port, verify in attempts:
+            key = (scheme, attempt_port)
+            if key in seen:
+                continue
+            seen.add(key)
+            base = f"{scheme}://{host}:{attempt_port}/rest"
+            try:
+                with httpx.Client(
+                    verify=verify,
+                    timeout=8.0,
+                    auth=auth,
+                    headers=headers,
+                ) as client:
+                    resource = self._rest_get(client, f"{base}/system/resource")
+                    if resource is None:
+                        errors.append(f"{base}/system/resource sin respuesta")
+                        continue
+
+                    identity_rows = self._rest_get(client, f"{base}/system/identity") or []
+                    interfaces = self._rest_get(client, f"{base}/interface") or []
+                    addresses = self._rest_get(client, f"{base}/ip/address") or []
+                    routes = self._rest_get(client, f"{base}/ip/route") or []
+                    leases = self._rest_get(client, f"{base}/ip/dhcp-server/lease") or []
+
+                return self._build_rest_payload(
+                    resource,
+                    identity_rows,
+                    interfaces,
+                    addresses,
+                    routes,
+                    leases,
+                    device_key,
+                )
+            except Exception as exc:
+                errors.append(f"{base}: {exc}")
+                if not _is_tls_or_connect_error(exc):
+                    break
+
+        return {
+            "reachable": False,
+            "error": (
+                "RouterOS REST unreachable. En RouterOS 7 usa HTTPS (www-ssl, puerto 443). "
+                "HTTP /rest solo funciona desde v7.9. "
+                f"Intentos: {' | '.join(errors[-3:])}"
+            ),
+        }
+
+    def _build_rest_payload(
+        self,
+        resource: list[dict[str, Any]],
+        identity_rows: list[dict[str, Any]],
+        interfaces: list[dict[str, Any]],
+        addresses: list[dict[str, Any]],
+        routes: list[dict[str, Any]],
+        leases: list[dict[str, Any]],
+        device_key: str,
+    ) -> dict[str, Any]:
         row = resource[0] if resource else {}
         total_mem = int(row.get("total-memory") or row.get("total_memory") or 0)
         free_mem = int(row.get("free-memory") or row.get("free_memory") or 0)
@@ -277,8 +383,22 @@ class MikrotikApiAdapter(BaseAdapter):
             resp.raise_for_status()
             data = resp.json()
             return data if isinstance(data, list) else [data]
-        except httpx.HTTPError:
-            return None
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 401:
+                raise RuntimeError("RouterOS API: usuario o contraseña incorrectos (401)") from exc
+            if exc.response.status_code == 404:
+                body = exc.response.text[:120].lower()
+                if "<html" in body:
+                    raise RuntimeError(
+                        "REST no disponible en HTTP (404 HTML). En RouterOS 7 usa www-ssl "
+                        "(HTTPS puerto 443). REST por HTTP solo desde v7.9."
+                    ) from exc
+                raise RuntimeError(
+                    "RouterOS REST: recurso no encontrado (404). Revisa usuario con permiso rest-api."
+                ) from exc
+            raise RuntimeError(f"RouterOS API HTTP {exc.response.status_code}: {url}") from exc
+        except httpx.HTTPError as exc:
+            raise RuntimeError(f"RouterOS API sin respuesta: {exc}") from exc
 
     def _optional_float(self, value: Any) -> float | None:
         try:

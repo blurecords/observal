@@ -8,41 +8,58 @@ const SENSITIVE_METADATA_KEYS = [
   "mikrotik_password",
 ] as const;
 
-function getKey(): CryptoKey | null {
-  const raw = Deno.env.get("CREDENTIALS_ENCRYPTION_KEY");
-  if (!raw) return null;
-  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
-  if (bytes.length !== 32) {
-    throw new Error("CREDENTIALS_ENCRYPTION_KEY must be 32 bytes base64");
-  }
-  return crypto.subtle.importKey("raw", bytes, "AES-GCM", false, [
-    "encrypt",
-    "decrypt",
-  ]);
-}
-
 let keyPromise: Promise<CryptoKey | null> | null = null;
 
 async function loadKey(): Promise<CryptoKey | null> {
-  if (!keyPromise) keyPromise = getKey();
+  if (keyPromise) return keyPromise;
+
+  keyPromise = (async () => {
+    const raw = Deno.env.get("CREDENTIALS_ENCRYPTION_KEY");
+    if (!raw) return null;
+
+    try {
+      const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+      if (bytes.length !== 32) {
+        console.error(
+          "CREDENTIALS_ENCRYPTION_KEY must be 32 bytes base64 — decryption disabled",
+        );
+        return null;
+      }
+      return await crypto.subtle.importKey("raw", bytes, "AES-GCM", false, [
+        "encrypt",
+        "decrypt",
+      ]);
+    } catch (err) {
+      console.error("CREDENTIALS_ENCRYPTION_KEY invalid:", err);
+      return null;
+    }
+  })();
+
   return keyPromise;
 }
 
 export async function decryptCredentials(
   blob: string,
 ): Promise<Record<string, string>> {
-  const key = await loadKey();
-  if (!key) return {};
+  try {
+    const key = await loadKey();
+    if (!key) return {};
 
-  const data = Uint8Array.from(atob(blob), (c) => c.charCodeAt(0));
-  const iv = data.slice(0, 12);
-  const ciphertext = data.slice(12);
-  const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    ciphertext,
-  );
-  return JSON.parse(new TextDecoder().decode(plaintext));
+    const data = Uint8Array.from(atob(blob), (c) => c.charCodeAt(0));
+    if (data.length < 13) return {};
+
+    const iv = data.slice(0, 12);
+    const ciphertext = data.slice(12);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext,
+    );
+    return JSON.parse(new TextDecoder().decode(plaintext));
+  } catch (err) {
+    console.error("decryptCredentials failed:", err);
+    return {};
+  }
 }
 
 export function extractLegacyCredentials(
@@ -69,7 +86,12 @@ export async function resolveCollectorCredentials(
   }
 
   if (credentialsEncrypted) {
-    Object.assign(merged, await decryptCredentials(credentialsEncrypted));
+    const decrypted = await decryptCredentials(credentialsEncrypted);
+    if (Object.keys(decrypted).length > 0) {
+      Object.assign(merged, decrypted);
+    } else {
+      Object.assign(merged, extractLegacyCredentials(metadata));
+    }
   } else {
     Object.assign(merged, extractLegacyCredentials(metadata));
   }

@@ -116,7 +116,12 @@ export default async function DeviceDetailPage({
       />
 
       {mikrotik ? (
-        <MikrotikLivePanel deviceId={device.id} />
+        <MikrotikLivePanel
+          deviceId={device.id}
+          lastTestAt={device.last_test_at}
+          lastTestOk={device.last_test_ok}
+          lastTestMessage={device.last_test_message}
+        />
       ) : (
         <>
           <div className="rounded-xl border border-card bg-card p-5">
