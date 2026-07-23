@@ -33,6 +33,18 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.searchParams.get("error_description") ??
     request.nextUrl.searchParams.get("error");
 
+  const authCode = request.nextUrl.searchParams.get("code");
+
+  // Supabase sometimes redirects to Site URL (/) with ?code= instead of /auth/callback
+  if (authCode && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    if (!url.searchParams.get("next")) {
+      url.searchParams.set("next", "/app");
+    }
+    return NextResponse.redirect(url);
+  }
+
   if (authError && request.nextUrl.pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

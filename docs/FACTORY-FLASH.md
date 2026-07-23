@@ -35,8 +35,14 @@ Genera:
 3. Boot, copiar repo o tarball del collector
 4. `sudo bash collector/install.sh`
 5. Editar `/etc/observal/observal.env` con `SUPABASE_URL`
-6. `sudo cp identity.json /etc/observal/identity.json && sudo chmod 600 /etc/observal/identity.json`
-7. `sudo systemctl start observal-collector`
+6. `sudo cp identity.json /etc/observal/identity.json`
+7. **Permisos** (el servicio corre como usuario `observal`):
+   ```bash
+   sudo chown root:observal /etc/observal /etc/observal/*
+   sudo chmod 750 /etc/observal
+   sudo chmod 640 /etc/observal/identity.json /etc/observal/observal.env
+   ```
+8. `sudo systemctl start observal-collector`
 
 ## 3. Batch (10+ unidades)
 

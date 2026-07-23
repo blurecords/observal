@@ -103,6 +103,10 @@ CREATE POLICY profiles_update ON profiles FOR UPDATE
   );
 
 -- Invites: owners only
+DROP POLICY IF EXISTS org_invites_select ON org_invites;
+DROP POLICY IF EXISTS org_invites_insert ON org_invites;
+DROP POLICY IF EXISTS org_invites_delete ON org_invites;
+
 CREATE POLICY org_invites_select ON org_invites FOR SELECT
   USING (organization_id = auth_organization_id() AND auth_is_owner());
 
@@ -114,6 +118,8 @@ CREATE POLICY org_invites_delete ON org_invites FOR DELETE
 
 -- Venues / rooms / opening hours: managers write
 DROP POLICY IF EXISTS venues_all ON venues;
+DROP POLICY IF EXISTS venues_select ON venues;
+DROP POLICY IF EXISTS venues_write ON venues;
 CREATE POLICY venues_select ON venues FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY venues_write ON venues FOR ALL
@@ -121,6 +127,8 @@ CREATE POLICY venues_write ON venues FOR ALL
   WITH CHECK (organization_id = auth_organization_id() AND auth_can_manage());
 
 DROP POLICY IF EXISTS rooms_all ON rooms;
+DROP POLICY IF EXISTS rooms_select ON rooms;
+DROP POLICY IF EXISTS rooms_write ON rooms;
 CREATE POLICY rooms_select ON rooms FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY rooms_write ON rooms FOR ALL
@@ -128,6 +136,8 @@ CREATE POLICY rooms_write ON rooms FOR ALL
   WITH CHECK (organization_id = auth_organization_id() AND auth_can_manage());
 
 DROP POLICY IF EXISTS opening_hours_all ON opening_hours;
+DROP POLICY IF EXISTS opening_hours_select ON opening_hours;
+DROP POLICY IF EXISTS opening_hours_write ON opening_hours;
 CREATE POLICY opening_hours_select ON opening_hours FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY opening_hours_write ON opening_hours FOR ALL
@@ -141,6 +151,8 @@ CREATE POLICY collectors_update ON collectors FOR UPDATE
 
 -- Devices: managers write
 DROP POLICY IF EXISTS av_devices_all ON av_devices;
+DROP POLICY IF EXISTS av_devices_select ON av_devices;
+DROP POLICY IF EXISTS av_devices_write ON av_devices;
 CREATE POLICY av_devices_select ON av_devices FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY av_devices_write ON av_devices FOR ALL
@@ -149,6 +161,8 @@ CREATE POLICY av_devices_write ON av_devices FOR ALL
 
 -- Alerts: managers ack/resolve
 DROP POLICY IF EXISTS alerts_all ON alerts;
+DROP POLICY IF EXISTS alerts_select ON alerts;
+DROP POLICY IF EXISTS alerts_write ON alerts;
 CREATE POLICY alerts_select ON alerts FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY alerts_write ON alerts FOR ALL
@@ -157,6 +171,8 @@ CREATE POLICY alerts_write ON alerts FOR ALL
 
 -- Alert rules: owners + integrators
 DROP POLICY IF EXISTS alert_rules_all ON alert_rules;
+DROP POLICY IF EXISTS alert_rules_select ON alert_rules;
+DROP POLICY IF EXISTS alert_rules_write ON alert_rules;
 CREATE POLICY alert_rules_select ON alert_rules FOR SELECT
   USING (organization_id = auth_organization_id());
 CREATE POLICY alert_rules_write ON alert_rules FOR ALL

@@ -7,6 +7,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function readApiError(data: unknown): string {
+  if (!data || typeof data !== "object") return "Error al activar el collector";
+  const err = (data as { error?: unknown }).error;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object" && "message" in err) {
+    return String((err as { message: string }).message);
+  }
+  return "Error al activar el collector";
+}
+
 export default function ActivateCollectorPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -52,7 +62,7 @@ export default function ActivateCollectorPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error ?? "Error al activar el collector");
+      setError(readApiError(data));
       return;
     }
 
@@ -98,7 +108,7 @@ export default function ActivateCollectorPage() {
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold">
             3
           </span>
-          <p>Introduce el código de la etiqueta abajo.</p>
+          <p>Introduce el código de la etiqueta abajo. La Pi no tiene que aparecer online antes — se vinculará al activar.</p>
         </div>
       </div>
 

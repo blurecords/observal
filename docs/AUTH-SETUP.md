@@ -30,7 +30,8 @@ http://localhost:3000/auth/callback
 
 Sin estas URLs, Supabase rechaza el redirect tras Google.
 
-> Si el login falla y acabas en `www.observal.app/?error=...`, el Site URL o los Redirect URLs no coinciden con el dominio que usa el navegador. Añade ambas variantes (`observal.app` y `www.observal.app`).
+> Si tras login acabas en `/?code=...` (landing sin panel), falta `/auth/callback` en Redirect URLs. El code debe procesarse en `/auth/callback`, no en `/`.
+> Si acabas en `/?error=...`, revisa Site URL y Redirect URLs (con y sin `www`).
 
 ## 2. Supabase → Authentication → Providers → Google
 

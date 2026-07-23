@@ -11,6 +11,7 @@ export type DeviceType =
   | "speaker_zone"
   | "media_player"
   | "show_controller"
+  | "network_router"
   | "generic_av";
 
 export type MonitoringProfile =
@@ -21,7 +22,9 @@ export type MonitoringProfile =
   | "snmp_qsc"
   | "tcp_health"
   | "extron_sis"
-  | "novastar_http";
+  | "novastar_http"
+  | "mikrotik_api"
+  | "mikrotik_snmp";
 
 export interface DeviceTypeOption {
   id: DeviceType;
@@ -117,11 +120,18 @@ export const DEVICE_TYPES: DeviceTypeOption[] = [
     suggestedProfiles: ["tcp_health", "ping"],
   },
   {
+    id: "network_router",
+    label: "Router / switch",
+    icon: "🌐",
+    defaultProfile: "mikrotik_api",
+    suggestedProfiles: ["mikrotik_api", "mikrotik_snmp", "snmp_generic", "ping"],
+  },
+  {
     id: "generic_av",
     label: "AV genérico",
     icon: "⚙️",
     defaultProfile: "ping",
-    suggestedProfiles: ["ping", "snmp_generic", "tcp_health"],
+    suggestedProfiles: ["ping", "snmp_generic", "mikrotik_api", "mikrotik_snmp", "tcp_health"],
   },
 ];
 
@@ -134,6 +144,8 @@ export const PROFILE_LABELS: Record<MonitoringProfile, string> = {
   tcp_health: "Puerto TCP",
   extron_sis: "Extron SIS (matrices / control)",
   novastar_http: "NovaStar HTTP (procesadores LED)",
+  mikrotik_api: "MikroTik RouterOS API (REST)",
+  mikrotik_snmp: "MikroTik SNMP (extendido)",
 };
 
 export const BRAND_SUGGESTIONS: Partial<Record<DeviceType, string[]>> = {
@@ -144,6 +156,7 @@ export const BRAND_SUGGESTIONS: Partial<Record<DeviceType, string[]>> = {
   amplifier: ["QSC", "Powersoft", "Lab.gruppen", "Crown", "Powersoft"],
   lighting_desk: ["grandMA", "ETC", "Avolites", "ChamSys"],
   dsp: ["QSC", "Biamp", "Bose", "Xilica"],
+  network_router: ["MikroTik", "Ubiquiti", "Cisco", "Aruba"],
 };
 
 export function getDeviceType(id: DeviceType) {
@@ -151,7 +164,15 @@ export function getDeviceType(id: DeviceType) {
 }
 
 export function profileNeedsSnmp(profile: MonitoringProfile) {
-  return profile === "snmp_generic" || profile === "snmp_qsc";
+  return profile === "snmp_generic" || profile === "snmp_qsc" || profile === "mikrotik_snmp";
+}
+
+export function profileNeedsMikrotikApi(profile: MonitoringProfile) {
+  return profile === "mikrotik_api";
+}
+
+export function isMikrotikProfile(profile: MonitoringProfile) {
+  return profile === "mikrotik_api" || profile === "mikrotik_snmp";
 }
 
 export function profileNeedsPjlink(profile: MonitoringProfile) {

@@ -4,14 +4,24 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /**
- * Supabase OAuth errors sometimes land on Site URL (/) in the query string or hash.
- * Forward them to /login so the user sees a readable message.
+ * Supabase OAuth sometimes lands on Site URL (/) with ?code= or error params
+ * instead of /auth/callback. Forward to the correct routes.
  */
-export function AuthErrorRedirect() {
+export function AuthOAuthRedirect() {
   const router = useRouter();
 
   useEffect(() => {
     const url = new URL(window.location.href);
+
+    const code = url.searchParams.get("code");
+    if (code) {
+      const next = url.searchParams.get("next") ?? "/app";
+      router.replace(
+        `/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`,
+      );
+      return;
+    }
+
     const fromQuery =
       url.searchParams.get("error_description") ??
       url.searchParams.get("error");
@@ -19,6 +29,13 @@ export function AuthErrorRedirect() {
     let fromHash: string | null = null;
     if (url.hash.length > 1) {
       const hashParams = new URLSearchParams(url.hash.slice(1));
+      const hashCode = hashParams.get("code");
+      if (hashCode) {
+        router.replace(
+          `/auth/callback?code=${encodeURIComponent(hashCode)}&next=/app`,
+        );
+        return;
+      }
       fromHash =
         hashParams.get("error_description") ?? hashParams.get("error");
     }

@@ -7,6 +7,7 @@ const SENSITIVE_METADATA_KEYS = [
   "pjlink_password",
   "sis_password",
   "novastar_password",
+  "mikrotik_password",
 ] as const;
 
 export type SensitiveCredentialKey = (typeof SENSITIVE_METADATA_KEYS)[number];

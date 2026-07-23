@@ -1,0 +1,12 @@
+# Device-facing Edge Functions — authenticated by hardware_id / ingest token, not user JWT.
+[functions.collectors-announce]
+verify_jwt = false
+
+[functions.collectors-poll]
+verify_jwt = false
+
+[functions.collector-ingest]
+verify_jwt = false
+
+[functions.check-collectors]
+verify_jwt = false

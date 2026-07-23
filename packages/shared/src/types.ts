@@ -11,6 +11,7 @@ export type DeviceType =
   | "speaker_zone"
   | "media_player"
   | "show_controller"
+  | "network_router"
   | "generic_av";
 
 export type DeviceStatus = "online" | "offline" | "warning" | "critical" | "unknown";
@@ -31,7 +32,9 @@ export type MonitoringProfile =
   | "snmp_qsc"
   | "tcp_health"
   | "extron_sis"
-  | "novastar_http";
+  | "novastar_http"
+  | "mikrotik_api"
+  | "mikrotik_snmp";
 
 export interface AvMetric {
   device_id: string;

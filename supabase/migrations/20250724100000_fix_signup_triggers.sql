@@ -36,13 +36,15 @@ DECLARE
 BEGIN
   PERFORM set_config('row_security', 'off', true);
 
-  SELECT * INTO invite
-  FROM org_invites
-  WHERE lower(email) = lower(NEW.email)
-    AND accepted_at IS NULL
-    AND expires_at > now()
-  ORDER BY created_at DESC
-  LIMIT 1;
+  IF to_regclass('public.org_invites') IS NOT NULL THEN
+    SELECT * INTO invite
+    FROM org_invites
+    WHERE lower(email) = lower(NEW.email)
+      AND accepted_at IS NULL
+      AND expires_at > now()
+    ORDER BY created_at DESC
+    LIMIT 1;
+  END IF;
 
   IF invite IS NOT NULL THEN
     INSERT INTO profiles (id, organization_id, full_name, avatar_url, role)

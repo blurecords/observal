@@ -108,22 +108,33 @@ Deno.serve(async (req) => {
     const ingestToken = crypto.randomUUID() + crypto.randomUUID();
     const ingestTokenHash = await hashToken(ingestToken);
 
+    // Upsert: Pi may not have called announce yet (no collectors row until first contact)
     const { data: collector, error: collectorError } = await supabase
       .from("collectors")
-      .update({
-        organization_id: profile.organization_id,
-        venue_id: venueId,
-        name: body.collector_name ?? "Observal Collector",
-        status: "active",
-        ingest_token_hash: ingestTokenHash,
-        claimed_at: new Date().toISOString(),
-        config_version: 1,
-      })
-      .eq("hardware_id", factory.hardware_id)
+      .upsert(
+        {
+          hardware_id: factory.hardware_id,
+          organization_id: profile.organization_id,
+          venue_id: venueId,
+          name: body.collector_name ?? "Observal Collector",
+          status: "active",
+          ingest_token_hash: ingestTokenHash,
+          claimed_at: new Date().toISOString(),
+          config_version: 1,
+          last_seen_at: new Date().toISOString(),
+        },
+        { onConflict: "hardware_id" },
+      )
       .select("id, hardware_id")
       .single();
 
-    if (collectorError) throw collectorError;
+    if (collectorError) {
+      console.error("collectors-claim upsert:", collectorError);
+      return jsonResponse(
+        { error: collectorError.message ?? "No se pudo activar el collector" },
+        500,
+      );
+    }
 
     await supabase
       .from("devices_factory")
@@ -149,6 +160,8 @@ Deno.serve(async (req) => {
       message: "Collector activado. La Pi recibirá el token en su próximo ciclo.",
     });
   } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("collectors-claim:", message);
+    return jsonResponse({ error: message }, 500);
   }
 });

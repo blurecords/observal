@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { MetricsChart } from "@/components/charts/metrics-chart";
 import { DeviceTestButton } from "@/components/app/device-test-button";
+import { MikrotikLivePanel } from "@/components/devices/mikrotik-live-panel";
 import { StatusBadge } from "@/components/app/status-badge";
 import { WriteGate } from "@/components/app/role-context";
-import { DEVICE_TYPES, PROFILE_LABELS } from "@/lib/av-catalog";
+import { DEVICE_TYPES, isMikrotikProfile, PROFILE_LABELS } from "@/lib/av-catalog";
 import { createClient } from "@/lib/supabase/server";
 import { relationName } from "@/lib/supabase/helpers";
 import { Pencil } from "lucide-react";
@@ -59,6 +60,8 @@ export default async function DeviceDetailPage({
     color: i === 0 ? "#3b82f6" : "#22c55e",
   }));
 
+  const mikrotik = isMikrotikProfile(device.profile as Parameters<typeof isMikrotikProfile>[0]);
+
   return (
     <div className="space-y-8">
       <div>
@@ -112,40 +115,46 @@ export default async function DeviceDetailPage({
         lastTestMessage={device.last_test_message}
       />
 
-      <div className="rounded-xl border border-card bg-card p-5">
-        <h3 className="font-semibold mb-4">Métricas — últimas 24 h</h3>
-        <MetricsChart series={chartSeries} height={300} />
-      </div>
+      {mikrotik ? (
+        <MikrotikLivePanel deviceId={device.id} />
+      ) : (
+        <>
+          <div className="rounded-xl border border-card bg-card p-5">
+            <h3 className="font-semibold mb-4">Métricas — últimas 24 h</h3>
+            <MetricsChart series={chartSeries} height={300} />
+          </div>
 
-      <div className="rounded-xl border border-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-card font-semibold text-sm">
-          Lecturas recientes
-        </div>
-        <div className="max-h-64 overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-[#0a0f1a] text-muted sticky top-0">
-              <tr>
-                <th className="px-5 py-2 text-left">Métrica</th>
-                <th className="px-5 py-2 text-left">Valor</th>
-                <th className="px-5 py-2 text-left">Hora</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--card-border)]">
-              {(metrics ?? []).slice(-20).reverse().map((m, i) => (
-                <tr key={i}>
-                  <td className="px-5 py-2 font-mono text-xs">{m.name}</td>
-                  <td className="px-5 py-2">
-                    {m.value_numeric ?? m.value_text ?? "—"}
-                  </td>
-                  <td className="px-5 py-2 text-muted text-xs">
-                    {new Date(m.recorded_at).toLocaleString("es-ES")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <div className="rounded-xl border border-card overflow-hidden">
+            <div className="px-5 py-3 border-b border-card font-semibold text-sm">
+              Lecturas recientes
+            </div>
+            <div className="max-h-64 overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#0a0f1a] text-muted sticky top-0">
+                  <tr>
+                    <th className="px-5 py-2 text-left">Métrica</th>
+                    <th className="px-5 py-2 text-left">Valor</th>
+                    <th className="px-5 py-2 text-left">Hora</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--card-border)]">
+                  {(metrics ?? []).slice(-20).reverse().map((m, i) => (
+                    <tr key={i}>
+                      <td className="px-5 py-2 font-mono text-xs">{m.name}</td>
+                      <td className="px-5 py-2">
+                        {m.value_numeric ?? m.value_text ?? "—"}
+                      </td>
+                      <td className="px-5 py-2 text-muted text-xs">
+                        {new Date(m.recorded_at).toLocaleString("es-ES")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

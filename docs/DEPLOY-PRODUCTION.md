@@ -16,6 +16,10 @@
 
 ## Edge Functions
 
+Device functions (`collectors-announce`, `collectors-poll`, `collector-ingest`) use `verify_jwt = false` in `supabase/config.toml` — they authenticate via `hardware_id` / ingest token, not user JWT.
+
+Pi `/etc/observal/observal.env` must include `SUPABASE_ANON_KEY` (same publishable key as the web app).
+
 ```bash
 supabase functions deploy collectors-announce
 supabase functions deploy collectors-poll

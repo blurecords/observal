@@ -27,7 +27,9 @@ function LoginForm() {
     setLoading(true);
     setLocalError(null);
 
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+    const origin = appUrl || window.location.origin;
+    const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(redirect)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

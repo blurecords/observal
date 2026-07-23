@@ -11,6 +11,7 @@ import {
   PROFILE_LABELS,
   profileNeedsNovaStar,
   profileNeedsPjlink,
+  profileNeedsMikrotikApi,
   profileNeedsSis,
   profileNeedsSnmp,
   profileNeedsTcpPort,
@@ -48,6 +49,10 @@ export default function EditDevicePage() {
   const [sisPassword, setSisPassword] = useState("");
   const [novastarPort, setNovastarPort] = useState("8001");
   const [novastarTcpPort, setNovastarTcpPort] = useState(String(DEFAULT_NOVASTAR_TCP_PORT));
+  const [mikrotikUsername, setMikrotikUsername] = useState("admin");
+  const [mikrotikPassword, setMikrotikPassword] = useState("");
+  const [mikrotikApiPort, setMikrotikApiPort] = useState("443");
+  const [mikrotikUseHttps, setMikrotikUseHttps] = useState(true);
   const [venueId, setVenueId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [collectorId, setCollectorId] = useState("");
@@ -94,6 +99,10 @@ export default function EditDevicePage() {
       setSisPassword("");
       setNovastarPort(String(meta.novastar_port ?? 8001));
       setNovastarTcpPort(String(meta.novastar_tcp_port ?? DEFAULT_NOVASTAR_TCP_PORT));
+      setMikrotikUsername(String(meta.mikrotik_username ?? "admin"));
+      setMikrotikPassword("");
+      setMikrotikApiPort(String(meta.mikrotik_api_port ?? 443));
+      setMikrotikUseHttps(String(meta.mikrotik_use_https ?? "true") !== "false");
 
       setVenues(v.data ?? []);
       setRooms(r.data ?? []);
@@ -134,6 +143,12 @@ export default function EditDevicePage() {
     if (profileNeedsNovaStar(profile)) {
       metadata.novastar_port = parseInt(novastarPort, 10) || 8001;
       metadata.novastar_tcp_port = parseInt(novastarTcpPort, 10) || DEFAULT_NOVASTAR_TCP_PORT;
+    }
+    if (profileNeedsMikrotikApi(profile)) {
+      metadata.mikrotik_username = mikrotikUsername || "admin";
+      if (mikrotikPassword) metadata.mikrotik_password = mikrotikPassword;
+      metadata.mikrotik_api_port = parseInt(mikrotikApiPort, 10) || 443;
+      metadata.mikrotik_use_https = mikrotikUseHttps ? "true" : "false";
     }
 
     const result = await updateDevice(id, {
@@ -350,6 +365,53 @@ export default function EditDevicePage() {
                 onChange={(e) => setNovastarTcpPort(e.target.value)}
                 className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono"
               />
+            </div>
+          </>
+        )}
+
+        {profileNeedsMikrotikApi(profile) && (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-2">Usuario RouterOS</label>
+              <input
+                value={mikrotikUsername}
+                onChange={(e) => setMikrotikUsername(e.target.value)}
+                className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Contraseña RouterOS (dejar vacío para no cambiar)
+              </label>
+              <input
+                type="password"
+                value={mikrotikPassword}
+                onChange={(e) => setMikrotikPassword(e.target.value)}
+                className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3"
+              />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Puerto API</label>
+                <input
+                  value={mikrotikApiPort}
+                  onChange={(e) => setMikrotikApiPort(e.target.value)}
+                  className="w-full rounded-lg border border-card bg-[#0a0f1a] px-4 py-3 font-mono"
+                />
+              </div>
+              <div className="flex items-end pb-3">
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={mikrotikUseHttps}
+                    onChange={(e) => {
+                      setMikrotikUseHttps(e.target.checked);
+                      setMikrotikApiPort(e.target.checked ? "443" : "80");
+                    }}
+                  />
+                  HTTPS (RouterOS 7 REST)
+                </label>
+              </div>
             </div>
           </>
         )}
