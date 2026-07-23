@@ -58,8 +58,8 @@ Deno.serve(async (req) => {
     if (devicesError) throw devicesError;
 
     const config = {
-      poll_interval_sec: 60,
-      send_interval_sec: 60,
+      poll_interval_sec: 30,
+      send_interval_sec: 30,
       devices: await Promise.all(
         (devices ?? []).map(async (d) => {
           const credentials = await resolveCollectorCredentials(

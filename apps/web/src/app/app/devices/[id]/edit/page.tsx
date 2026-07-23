@@ -2,6 +2,7 @@
 
 import { deleteDevice, updateDevice } from "@/actions/devices";
 import { createClient } from "@/lib/supabase/client";
+import { getActionError } from "@/lib/action-result";
 import {
   BRAND_SUGGESTIONS,
   DEFAULT_TCP_PORTS,
@@ -168,8 +169,9 @@ export default function EditDevicePage() {
         metadata,
       });
 
-      if ("error" in result && result.error) {
-        setError(result.error);
+      const actionError = getActionError(result);
+      if (actionError) {
+        setError(actionError);
         return;
       }
 
@@ -202,8 +204,9 @@ export default function EditDevicePage() {
     const result = await deleteDevice(id);
     setDeleting(false);
 
-    if ("error" in result && result.error) {
-      setError(result.error);
+    const actionError = getActionError(result);
+    if (actionError) {
+      setError(actionError);
       return;
     }
 

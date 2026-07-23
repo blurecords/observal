@@ -92,9 +92,12 @@ def _is_tls_or_connect_error(exc: BaseException) -> bool:
 
 class MikrotikApiAdapter(BaseAdapter):
     profile = "mikrotik_api"
+    FULL_SCAN_INTERVAL_SEC = 30
 
     def __init__(self) -> None:
         self._prev_counters: dict[str, tuple[float, int, int]] = {}
+        self._last_full_scan_at = 0.0
+        self._cached_full_scan: dict[str, Any] = {}
 
     async def poll(self, host: str, device: dict, credentials: dict) -> PollResult:
         username = credentials.get("mikrotik_username") or credentials.get("username") or "admin"
@@ -157,12 +160,19 @@ class MikrotikApiAdapter(BaseAdapter):
             ("uptime_sec", "router.uptime_sec", False),
             ("cpu_count", "router.cpu_count", False),
             ("temperature", "router.temperature", False),
+            ("disk_free_bytes", "router.disk_free_bytes", False),
+            ("disk_total_bytes", "router.disk_total_bytes", False),
+            ("disk_used_pct", "router.disk_used_pct", False),
+            ("connections_count", "router.connections_count", False),
+            ("health_voltage", "router.health_voltage", False),
             ("ip_addresses_count", "router.ip_addresses_count", False),
             ("routes_count", "router.routes_count", False),
             ("dhcp_leases_count", "router.dhcp_leases_count", False),
             ("version", "router.version", True),
             ("board_name", "router.board_name", True),
             ("identity", "router.identity", True),
+            ("platform", "router.platform", True),
+            ("architecture", "router.architecture", True),
         ):
             val = system.get(key)
             if val is None:
@@ -237,6 +247,30 @@ class MikrotikApiAdapter(BaseAdapter):
                         "labels": labels,
                     }
                 )
+            for key, metric_name, as_text in (
+                ("mtu", "router.interface.mtu", False),
+                ("rx_packets", "router.interface.rx_packets", False),
+                ("tx_packets", "router.interface.tx_packets", False),
+                ("rx_drops", "router.interface.rx_drops", False),
+                ("tx_drops", "router.interface.tx_drops", False),
+                ("rx_errors", "router.interface.rx_errors", False),
+                ("tx_errors", "router.interface.tx_errors", False),
+                ("link_downs", "router.interface.link_downs", False),
+                ("comment", "router.interface.comment", True),
+                ("mac", "router.interface.mac", True),
+            ):
+                val = iface.get(key)
+                if val is None:
+                    continue
+                metrics.append(
+                    {
+                        "name": metric_name,
+                        "value": val if as_text else val,
+                        "status": "online",
+                        "ts": ts,
+                        "labels": labels,
+                    }
+                )
 
         return PollResult(status="online", metrics=metrics)
 
@@ -285,19 +319,13 @@ class MikrotikApiAdapter(BaseAdapter):
                         errors.append(f"{base}/system/resource sin respuesta")
                         continue
 
-                    identity_rows = self._rest_get(client, f"{base}/system/identity") or []
                     interfaces = self._rest_get(client, f"{base}/interface") or []
-                    addresses = self._rest_get(client, f"{base}/ip/address") or []
-                    routes = self._rest_get(client, f"{base}/ip/route") or []
-                    leases = self._rest_get(client, f"{base}/ip/dhcp-server/lease") or []
+                    full_scan = self._maybe_fetch_full_scan(client, base)
 
                 return self._build_rest_payload(
                     resource,
-                    identity_rows,
                     interfaces,
-                    addresses,
-                    routes,
-                    leases,
+                    full_scan,
                     device_key,
                 )
             except Exception as exc:
@@ -315,24 +343,57 @@ class MikrotikApiAdapter(BaseAdapter):
             ),
         }
 
+    def _maybe_fetch_full_scan(self, client: httpx.Client, base: str) -> dict[str, Any]:
+        now = time.time()
+        if (
+            self._cached_full_scan
+            and now - self._last_full_scan_at < self.FULL_SCAN_INTERVAL_SEC
+        ):
+            return self._cached_full_scan
+
+        identity_rows = self._rest_get(client, f"{base}/system/identity") or []
+        addresses = self._rest_get(client, f"{base}/ip/address") or []
+        routes = self._rest_get(client, f"{base}/ip/route") or []
+        leases = self._rest_get(client, f"{base}/ip/dhcp-server/lease") or []
+        health_rows = self._rest_get(client, f"{base}/system/health") or []
+        connections = self._rest_get(client, f"{base}/ip/firewall/connection") or []
+
+        identity = ""
+        if identity_rows:
+            identity = str(identity_rows[0].get("name") or "")
+
+        health_voltage = None
+        for sensor in health_rows:
+            name = str(sensor.get("name") or "").lower()
+            if "voltage" in name:
+                health_voltage = self._optional_float(sensor.get("value"))
+                break
+
+        self._cached_full_scan = {
+            "identity": identity,
+            "ip_addresses_count": len(addresses),
+            "routes_count": len(routes),
+            "dhcp_leases_count": len(leases),
+            "connections_count": len(connections),
+            "health_voltage": health_voltage,
+        }
+        self._last_full_scan_at = now
+        return self._cached_full_scan
+
     def _build_rest_payload(
         self,
         resource: list[dict[str, Any]],
-        identity_rows: list[dict[str, Any]],
         interfaces: list[dict[str, Any]],
-        addresses: list[dict[str, Any]],
-        routes: list[dict[str, Any]],
-        leases: list[dict[str, Any]],
+        full_scan: dict[str, Any],
         device_key: str,
     ) -> dict[str, Any]:
         row = resource[0] if resource else {}
         total_mem = int(row.get("total-memory") or row.get("total_memory") or 0)
         free_mem = int(row.get("free-memory") or row.get("free_memory") or 0)
         used_pct = round((1 - free_mem / total_mem) * 100, 1) if total_mem else None
-
-        identity = ""
-        if identity_rows:
-            identity = str(identity_rows[0].get("name") or "")
+        total_disk = int(row.get("total-hdd-space") or row.get("total_hdd_space") or 0)
+        free_disk = int(row.get("free-hdd-space") or row.get("free_hdd_space") or 0)
+        disk_used_pct = round((1 - free_disk / total_disk) * 100, 1) if total_disk else None
 
         parsed_interfaces: list[dict[str, Any]] = []
         now = time.time()
@@ -362,6 +423,16 @@ class MikrotikApiAdapter(BaseAdapter):
                     "tx_bytes": tx_bytes,
                     "rx_bps": rx_bps,
                     "tx_bps": tx_bps,
+                    "mtu": int(iface.get("mtu") or 0) or None,
+                    "rx_packets": int(iface.get("rx-packet") or iface.get("rx_packet") or 0),
+                    "tx_packets": int(iface.get("tx-packet") or iface.get("tx_packet") or 0),
+                    "rx_drops": int(iface.get("rx-drop") or iface.get("rx_drop") or 0),
+                    "tx_drops": int(iface.get("tx-drop") or iface.get("tx_drop") or 0),
+                    "rx_errors": int(iface.get("rx-error") or iface.get("rx_error") or 0),
+                    "tx_errors": int(iface.get("tx-error") or iface.get("tx_error") or 0),
+                    "link_downs": int(iface.get("link-downs") or iface.get("link_downs") or 0),
+                    "comment": str(iface.get("comment") or "") or None,
+                    "mac": str(iface.get("mac-address") or iface.get("mac_address") or "") or None,
                 }
             )
 
@@ -375,12 +446,19 @@ class MikrotikApiAdapter(BaseAdapter):
                 "uptime_sec": _parse_routeros_uptime(row.get("uptime") or row.get("uptime_sec") or 0),
                 "cpu_count": int(row.get("cpu-count") or row.get("cpu_count") or 0) or None,
                 "temperature": self._optional_float(row.get("cpu-temperature") or row.get("cpu_temperature")),
+                "disk_free_bytes": free_disk or None,
+                "disk_total_bytes": total_disk or None,
+                "disk_used_pct": disk_used_pct,
                 "version": str(row.get("version") or ""),
                 "board_name": str(row.get("board-name") or row.get("board_name") or ""),
-                "identity": identity,
-                "ip_addresses_count": len(addresses),
-                "routes_count": len(routes),
-                "dhcp_leases_count": len(leases),
+                "identity": full_scan.get("identity") or "",
+                "platform": str(row.get("platform") or "") or None,
+                "architecture": str(row.get("architecture-name") or row.get("architecture_name") or "") or None,
+                "ip_addresses_count": full_scan.get("ip_addresses_count"),
+                "routes_count": full_scan.get("routes_count"),
+                "dhcp_leases_count": full_scan.get("dhcp_leases_count"),
+                "connections_count": full_scan.get("connections_count"),
+                "health_voltage": full_scan.get("health_voltage"),
             },
             "interfaces": parsed_interfaces,
         }

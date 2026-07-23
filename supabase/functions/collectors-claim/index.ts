@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
       collector_id: collector.id,
       organization_id: profile.organization_id,
       version: 1,
-      config_json: { poll_interval_sec: 60, send_interval_sec: 60 },
+      config_json: { poll_interval_sec: 30, send_interval_sec: 30 },
     });
 
     await supabase

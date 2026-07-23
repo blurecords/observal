@@ -2,6 +2,7 @@
 
 import { createDevice } from "@/actions/devices";
 import { createClient } from "@/lib/supabase/client";
+import { getActionError } from "@/lib/action-result";
 import {
   BRAND_SUGGESTIONS,
   DEFAULT_TCP_PORTS,
@@ -176,8 +177,9 @@ export default function AddDevicePage() {
         metadata,
       });
 
-      if ("error" in result && result.error) {
-        setError(result.error);
+      const actionError = getActionError(result);
+      if (actionError) {
+        setError(actionError);
         return;
       }
 

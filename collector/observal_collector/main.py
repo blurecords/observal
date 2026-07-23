@@ -21,6 +21,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("observal")
 
+CONFIG_FETCH_INTERVAL_SEC = 10
+MIN_POLL_INTERVAL_SEC = 1
+
 
 class CollectorAgent:
     def __init__(self) -> None:
@@ -37,28 +40,42 @@ class CollectorAgent:
         self.collector_id: str | None = self.secrets.get("collector_id")
         self.ingest_token: str | None = self.secrets.get("ingest_token")
         self.config: dict = self.secrets.get("config", {})
-        self.poll_interval = 60
+        self.poll_interval = max(
+            MIN_POLL_INTERVAL_SEC,
+            int(self.config.get("poll_interval_sec", 30)),
+        )
+        self._last_config_fetch_at = 0.0
         self._last_poll_at = 0.0
 
     async def run(self) -> None:
         mode = "demo" if os.environ.get("OBSERVAL_DEMO", "").strip() in ("1", "true", "yes") else "live"
         log.info(
-            "Observal collector v%s — hardware_id=%s — mode=%s",
+            "Observal collector v%s — hardware_id=%s — mode=%s — poll=%ss",
             __version__,
             self.hardware_id,
             mode,
+            self.poll_interval,
         )
 
         await self.cloud.announce(__version__, get_local_ip())
 
         while True:
             try:
-                await self._cycle()
+                now = time.monotonic()
+                if now - self._last_config_fetch_at >= CONFIG_FETCH_INTERVAL_SEC:
+                    await self._fetch_config()
+                    self._last_config_fetch_at = now
+
+                if self.collector_id and self.ingest_token:
+                    await self._flush_buffer()
+                    if now - self._last_poll_at >= self.poll_interval:
+                        self._last_poll_at = now
+                        await self._poll_and_ingest()
             except Exception:
                 log.exception("Cycle error")
-            await asyncio.sleep(10)
+            await asyncio.sleep(1)
 
-    async def _cycle(self) -> None:
+    async def _fetch_config(self) -> None:
         poll_data = await self.cloud.poll()
         status = poll_data.get("status")
 
@@ -85,18 +102,12 @@ class CollectorAgent:
             self.config = poll_data["config"]
             self.secrets["config"] = self.config
             self.vault.save_secrets(self.secrets)
-            self.poll_interval = max(15, int(self.config.get("poll_interval_sec", 60)))
+            self.poll_interval = max(
+                MIN_POLL_INTERVAL_SEC,
+                int(self.config.get("poll_interval_sec", 30)),
+            )
 
-        if not self.collector_id or not self.ingest_token:
-            return
-
-        await self._flush_buffer()
-
-        now = time.monotonic()
-        if now - self._last_poll_at < self.poll_interval:
-            return
-        self._last_poll_at = now
-
+    async def _poll_and_ingest(self) -> None:
         devices = self.config.get("devices", [])
         if not devices:
             log.debug("No devices configured")
@@ -138,20 +149,20 @@ class CollectorAgent:
                 metrics.append({**m, "device_id": device["id"]})
 
             if result.metrics:
-                log.info(
+                log.debug(
                     "Polled %s (%s): %s — %d metrics",
                     device.get("name"),
                     device.get("profile"),
                     result.status,
                     len(result.metrics),
                 )
-            else:
+            elif result.error:
                 log.warning(
-                    "Polled %s (%s): %s — 0 metrics%s",
+                    "Polled %s (%s): %s — 0 metrics — %s",
                     device.get("name"),
                     device.get("profile"),
                     result.status,
-                    f" — {result.error}" if result.error else "",
+                    result.error,
                 )
 
             if device.get("test_requested_at"):

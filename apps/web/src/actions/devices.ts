@@ -56,105 +56,117 @@ async function checkDeviceLimit(supabase: Awaited<ReturnType<typeof createClient
 }
 
 export async function createDevice(input: DeviceInput) {
-  const actor = await getActor();
-  if (!actor) return { error: "No autenticado" };
-  const { supabase } = actor;
+  try {
+    const actor = await getActor();
+    if (!actor) return { error: "No autenticado" };
+    const { supabase } = actor;
 
-  const limitError = await checkDeviceLimit(supabase, actor.orgId, 1);
-  if (limitError) return { error: limitError };
+    const limitError = await checkDeviceLimit(supabase, actor.orgId, 1);
+    if (limitError) return { error: limitError };
 
-  const prepared = prepareDeviceStorage(input.metadata);
-  if ("error" in prepared) return { error: prepared.error };
+    const prepared = prepareDeviceStorage(input.metadata);
+    if ("error" in prepared) return { error: prepared.error };
 
-  const { data, error } = await supabase
-    .from("av_devices")
-    .insert({
-      ...input,
-      metadata: prepared.metadata,
-      credentials_encrypted: prepared.credentials_encrypted,
-    })
-    .select("id")
-    .single();
+    const { data, error } = await supabase
+      .from("av_devices")
+      .insert({
+        ...input,
+        metadata: prepared.metadata,
+        credentials_encrypted: prepared.credentials_encrypted,
+      })
+      .select("id")
+      .single();
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  await logAudit(supabase, {
-    organizationId: actor.orgId,
-    userId: actor.userId,
-    action: "device.create",
-    entityType: "av_device",
-    entityId: data.id,
-    summary: `Equipo creado: ${input.name}`,
-    metadata: { host: input.host, profile: input.profile },
-  });
+    await logAudit(supabase, {
+      organizationId: actor.orgId,
+      userId: actor.userId,
+      action: "device.create",
+      entityType: "av_device",
+      entityId: data.id,
+      summary: `Equipo creado: ${input.name}`,
+      metadata: { host: input.host, profile: input.profile },
+    });
 
-  revalidatePath("/app/devices");
-  return { ok: true };
+    revalidatePath("/app/devices");
+    return { ok: true as const };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Error al crear el equipo" };
+  }
 }
 
 export async function updateDevice(id: string, input: Partial<DeviceInput>) {
-  const actor = await getActor();
-  if (!actor) return { error: "No autenticado" };
-  const { supabase } = actor;
+  try {
+    const actor = await getActor();
+    if (!actor) return { error: "No autenticado" };
+    const { supabase } = actor;
 
-  const payload: Record<string, unknown> = { ...input };
+    const payload: Record<string, unknown> = { ...input };
 
-  if (input.metadata) {
-    const prepared = prepareDeviceStorage(input.metadata);
-    if ("error" in prepared) return { error: prepared.error };
-    payload.metadata = prepared.metadata;
-    if (prepared.credentials_encrypted) {
-      payload.credentials_encrypted = prepared.credentials_encrypted;
+    if (input.metadata) {
+      const prepared = prepareDeviceStorage(input.metadata);
+      if ("error" in prepared) return { error: prepared.error };
+      payload.metadata = prepared.metadata;
+      if (prepared.credentials_encrypted) {
+        payload.credentials_encrypted = prepared.credentials_encrypted;
+      }
     }
+
+    const { error } = await supabase.from("av_devices").update(payload).eq("id", id);
+
+    if (error) return { error: error.message };
+
+    await logAudit(supabase, {
+      organizationId: actor.orgId,
+      userId: actor.userId,
+      action: input.enabled === false ? "device.disable" : "device.update",
+      entityType: "av_device",
+      entityId: id,
+      summary: input.enabled === false ? "Equipo desactivado" : `Equipo actualizado: ${input.name ?? id}`,
+    });
+
+    revalidatePath("/app/devices");
+    revalidatePath(`/app/devices/${id}`);
+    return { ok: true as const };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Error al guardar el equipo" };
   }
-
-  const { error } = await supabase.from("av_devices").update(payload).eq("id", id);
-
-  if (error) return { error: error.message };
-
-  await logAudit(supabase, {
-    organizationId: actor.orgId,
-    userId: actor.userId,
-    action: input.enabled === false ? "device.disable" : "device.update",
-    entityType: "av_device",
-    entityId: id,
-    summary: input.enabled === false ? "Equipo desactivado" : `Equipo actualizado: ${input.name ?? id}`,
-  });
-
-  revalidatePath("/app/devices");
-  revalidatePath(`/app/devices/${id}`);
-  return { ok: true };
 }
 
 export async function deleteDevice(id: string) {
-  const actor = await getActor();
-  if (!actor) return { error: "No autenticado" };
-  const { supabase } = actor;
+  try {
+    const actor = await getActor();
+    if (!actor) return { error: "No autenticado" };
+    const { supabase } = actor;
 
-  const { data: device } = await supabase
-    .from("av_devices")
-    .select("id, name, organization_id")
-    .eq("id", id)
-    .eq("organization_id", actor.orgId)
-    .single();
+    const { data: device } = await supabase
+      .from("av_devices")
+      .select("id, name, organization_id")
+      .eq("id", id)
+      .eq("organization_id", actor.orgId)
+      .single();
 
-  if (!device) return { error: "Equipo no encontrado" };
+    if (!device) return { error: "Equipo no encontrado" };
 
-  const { error } = await supabase.from("av_devices").delete().eq("id", id);
+    const { error } = await supabase.from("av_devices").delete().eq("id", id);
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  await logAudit(supabase, {
-    organizationId: actor.orgId,
-    userId: actor.userId,
-    action: "device.delete",
-    entityType: "av_device",
-    entityId: id,
-    summary: `Equipo eliminado: ${device.name}`,
-  });
+    await logAudit(supabase, {
+      organizationId: actor.orgId,
+      userId: actor.userId,
+      action: "device.delete",
+      entityType: "av_device",
+      entityId: id,
+      summary: `Equipo eliminado: ${device.name}`,
+    });
 
-  revalidatePath("/app/devices");
-  return { ok: true };
+    revalidatePath("/app/devices");
+    return { ok: true as const };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Error al eliminar el equipo" };
+  }
 }
 
 export async function createDevicesBatch(inputs: DeviceInput[]) {
