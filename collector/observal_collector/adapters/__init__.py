@@ -203,6 +203,7 @@ class PjlinkAdapter(BaseAdapter):
 from observal_collector.adapters.snmp import SnmpAdapter, SnmpQscAdapter
 from observal_collector.adapters.extron_sis import ExtronSisAdapter
 from observal_collector.adapters.novastar import NovaStarHttpAdapter
+from observal_collector.adapters.mikrotik import MikrotikApiAdapter, MikrotikSnmpAdapter
 from observal_collector.adapters.demo import DemoAdapter, demo_enabled
 
 ADAPTERS: dict[str, BaseAdapter] = {
@@ -214,6 +215,8 @@ ADAPTERS: dict[str, BaseAdapter] = {
     "snmp_qsc": SnmpQscAdapter(),
     "extron_sis": ExtronSisAdapter(),
     "novastar_http": NovaStarHttpAdapter(),
+    "mikrotik_api": MikrotikApiAdapter(),
+    "mikrotik_snmp": MikrotikSnmpAdapter(),
 }
 
 

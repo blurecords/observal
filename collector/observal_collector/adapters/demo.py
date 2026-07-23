@@ -125,6 +125,39 @@ class DemoAdapter(BaseAdapter):
                 }
             )
 
+        if online and profile in ("mikrotik_api", "mikrotik_snmp"):
+            ts = datetime.now(timezone.utc).isoformat()
+            cpu = rng.randint(3, 45)
+            mem_pct = round(rng.uniform(28, 72), 1)
+            metrics.extend(
+                [
+                    {"name": "router.cpu_load", "value": cpu, "status": status, "ts": ts},
+                    {"name": "router.memory_used_pct", "value": mem_pct, "status": status, "ts": ts},
+                    {"name": "router.memory_free_bytes", "value": rng.randint(80_000_000, 180_000_000), "status": status, "ts": ts},
+                    {"name": "router.memory_total_bytes", "value": 256_000_000, "status": status, "ts": ts},
+                    {"name": "router.uptime_sec", "value": rng.randint(86400, 8640000), "status": status, "ts": ts},
+                    {"name": "router.version", "value": "7.16.2", "status": status, "ts": ts},
+                    {"name": "router.board_name", "value": "RB750Gr3", "status": status, "ts": ts},
+                    {"name": "router.identity", "value": "Observal-Demo-Router", "status": status, "ts": ts},
+                    {"name": "router.ip_addresses_count", "value": rng.randint(4, 12), "status": status, "ts": ts},
+                    {"name": "router.routes_count", "value": rng.randint(8, 40), "status": status, "ts": ts},
+                    {"name": "router.dhcp_leases_count", "value": rng.randint(2, 24), "status": status, "ts": ts},
+                ]
+            )
+            for iface in ("ether1", "ether2", "wlan1", "bridge"):
+                labels = {"interface": iface}
+                up = rng.random() > 0.15
+                metrics.extend(
+                    [
+                        {"name": "router.interface.up", "value": up, "status": status, "ts": ts, "labels": labels},
+                        {"name": "router.interface.type", "value": "ether" if iface.startswith("ether") else "wlan", "status": status, "ts": ts, "labels": labels},
+                        {"name": "router.interface.rx_bps", "value": rng.randint(100_000, 80_000_000), "status": status, "ts": ts, "labels": labels},
+                        {"name": "router.interface.tx_bps", "value": rng.randint(100_000, 40_000_000), "status": status, "ts": ts, "labels": labels},
+                        {"name": "router.interface.rx_bytes", "value": rng.randint(1_000_000, 900_000_000), "status": status, "ts": ts, "labels": labels},
+                        {"name": "router.interface.tx_bytes", "value": rng.randint(1_000_000, 500_000_000), "status": status, "ts": ts, "labels": labels},
+                    ]
+                )
+
         if online and profile == "tcp_health":
             port = (
                 credentials.get("tcp_port")
