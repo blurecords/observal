@@ -85,10 +85,9 @@ export function decryptCredentials(blob: string): Record<string, string> {
   return JSON.parse(plaintext) as Record<string, string>;
 }
 
-export function prepareDeviceStorage(metadata: Record<string, unknown>): {
-  metadata: Record<string, unknown>;
-  credentials_encrypted: string | null;
-} {
+export function prepareDeviceStorage(metadata: Record<string, unknown>):
+  | { metadata: Record<string, unknown>; credentials_encrypted: string | null }
+  | { error: string } {
   const sensitive = extractSensitiveCredentials(metadata);
   const cleanMetadata = stripSensitiveCredentials(metadata);
 
@@ -100,10 +99,19 @@ export function prepareDeviceStorage(metadata: Record<string, unknown>): {
     return { metadata, credentials_encrypted: null };
   }
 
-  return {
-    metadata: cleanMetadata,
-    credentials_encrypted: encryptCredentials(sensitive),
-  };
+  try {
+    return {
+      metadata: cleanMetadata,
+      credentials_encrypted: encryptCredentials(sensitive),
+    };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "No se pudieron cifrar las credenciales del equipo",
+    };
+  }
 }
 
 export function resolveDeviceCredentials(

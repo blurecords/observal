@@ -59,12 +59,18 @@ def _parse_routeros_uptime(value: str | int | float) -> int | None:
 
 
 def _mikrotik_tls12_context() -> ssl.SSLContext:
-    """Many RouterOS devices reject TLS 1.3 from OpenSSL 3 clients."""
-    ctx = ssl.create_default_context()
+    """OpenSSL 3 on Pi often needs legacy cipher compatibility with RouterOS www-ssl."""
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     ctx.minimum_version = ssl.TLSVersion.TLSv1_2
     ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+    if hasattr(ssl, "OP_LEGACY_SERVER_CONNECT"):
+        ctx.options |= ssl.OP_LEGACY_SERVER_CONNECT
+    try:
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+    except ssl.SSLError:
+        pass
     return ctx
 
 
@@ -248,10 +254,11 @@ class MikrotikApiAdapter(BaseAdapter):
         attempts: list[tuple[str, int, bool | ssl.SSLContext]] = []
 
         if use_https:
-            # REST on www (HTTP) exists only from RouterOS 7.9+. Prefer www-ssl + TLS 1.2.
             attempts.append(("https", port, _mikrotik_tls12_context()))
             if port != 443:
                 attempts.append(("https", 443, _mikrotik_tls12_context()))
+            # RouterOS 7.9+ REST on LAN — fallback when www-ssl TLS handshake fails (common on Pi).
+            attempts.append(("http", 80, False))
         else:
             attempts.append(("http", port, False))
             if port != 80:
@@ -301,9 +308,10 @@ class MikrotikApiAdapter(BaseAdapter):
         return {
             "reachable": False,
             "error": (
-                "RouterOS REST unreachable. En RouterOS 7 usa HTTPS (www-ssl, puerto 443). "
-                "HTTP /rest solo funciona desde v7.9. "
-                f"Intentos: {' | '.join(errors[-3:])}"
+                "RouterOS REST unreachable. Prueba en el MikroTik: "
+                "/ip service set www-ssl tls-version=only-1.2 disabled=no ; "
+                "o desactiva HTTPS en Observal (HTTP puerto 80, válido en v7.21). "
+                f"Intentos: {' | '.join(errors[-4:])}"
             ),
         }
 

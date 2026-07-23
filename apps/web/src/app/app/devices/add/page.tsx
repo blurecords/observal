@@ -133,7 +133,8 @@ export default function AddDevicePage() {
     setLoading(true);
     setError(null);
 
-    const metadata: Record<string, string | number> = {};
+    try {
+      const metadata: Record<string, string | number> = {};
     if (profileNeedsSnmp(profile)) {
       metadata.snmp_version = "2c";
       metadata.snmp_community = snmpCommunity;
@@ -159,31 +160,33 @@ export default function AddDevicePage() {
       metadata.mikrotik_use_https = mikrotikUseHttps ? "true" : "false";
     }
 
-    const result = await createDevice({
-      organization_id: orgId,
-      venue_id: venueId,
-      room_id: roomId || null,
-      collector_id: collectorId,
-      name,
-      device_type: deviceType,
-      brand: brand || null,
-      model: model || null,
-      host,
-      profile,
-      critical,
-      enabled: true,
-      metadata,
-    });
+      const result = await createDevice({
+        organization_id: orgId,
+        venue_id: venueId,
+        room_id: roomId || null,
+        collector_id: collectorId,
+        name,
+        device_type: deviceType,
+        brand: brand || null,
+        model: model || null,
+        host,
+        profile,
+        critical,
+        enabled: true,
+        metadata,
+      });
 
-    setLoading(false);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
 
-    if ("error" in result && result.error) {
-      setError(result.error);
-      return;
+      router.replace("/app/devices");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear el equipo");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/app/devices");
-    router.refresh();
   }
 
   return (

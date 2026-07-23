@@ -63,14 +63,15 @@ export async function createDevice(input: DeviceInput) {
   const limitError = await checkDeviceLimit(supabase, actor.orgId, 1);
   if (limitError) return { error: limitError };
 
-  const { metadata, credentials_encrypted } = prepareDeviceStorage(input.metadata);
+  const prepared = prepareDeviceStorage(input.metadata);
+  if ("error" in prepared) return { error: prepared.error };
 
   const { data, error } = await supabase
     .from("av_devices")
     .insert({
       ...input,
-      metadata,
-      credentials_encrypted,
+      metadata: prepared.metadata,
+      credentials_encrypted: prepared.credentials_encrypted,
     })
     .select("id")
     .single();
@@ -99,10 +100,11 @@ export async function updateDevice(id: string, input: Partial<DeviceInput>) {
   const payload: Record<string, unknown> = { ...input };
 
   if (input.metadata) {
-    const { metadata, credentials_encrypted } = prepareDeviceStorage(input.metadata);
-    payload.metadata = metadata;
-    if (credentials_encrypted) {
-      payload.credentials_encrypted = credentials_encrypted;
+    const prepared = prepareDeviceStorage(input.metadata);
+    if ("error" in prepared) return { error: prepared.error };
+    payload.metadata = prepared.metadata;
+    if (prepared.credentials_encrypted) {
+      payload.credentials_encrypted = prepared.credentials_encrypted;
     }
   }
 
@@ -163,10 +165,16 @@ export async function createDevicesBatch(inputs: DeviceInput[]) {
   const limitError = await checkDeviceLimit(supabase, actor.orgId, inputs.length);
   if (limitError) return { error: limitError };
 
-  const rows = inputs.map((input) => {
-    const { metadata, credentials_encrypted } = prepareDeviceStorage(input.metadata);
-    return { ...input, metadata, credentials_encrypted };
-  });
+  const rows = [];
+  for (const input of inputs) {
+    const prepared = prepareDeviceStorage(input.metadata);
+    if ("error" in prepared) return { error: prepared.error };
+    rows.push({
+      ...input,
+      metadata: prepared.metadata,
+      credentials_encrypted: prepared.credentials_encrypted,
+    });
+  }
 
   const { error } = await supabase.from("av_devices").insert(rows);
   if (error) return { error: error.message };

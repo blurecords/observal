@@ -126,7 +126,8 @@ export default function EditDevicePage() {
     setSaving(true);
     setError(null);
 
-    const metadata: Record<string, string | number> = {};
+    try {
+      const metadata: Record<string, string | number> = {};
     if (profileNeedsSnmp(profile)) {
       metadata.snmp_version = "2c";
       metadata.snmp_community = snmpCommunity;
@@ -152,29 +153,32 @@ export default function EditDevicePage() {
       metadata.mikrotik_use_https = mikrotikUseHttps ? "true" : "false";
     }
 
-    const result = await updateDevice(id, {
-      name: name.trim(),
-      device_type: deviceType,
-      brand: brand || null,
-      model: model || null,
-      host,
-      profile,
-      venue_id: venueId,
-      room_id: roomId || null,
-      collector_id: collectorId,
-      critical,
-      enabled,
-      metadata,
-    });
+      const result = await updateDevice(id, {
+        name: name.trim(),
+        device_type: deviceType,
+        brand: brand || null,
+        model: model || null,
+        host,
+        profile,
+        venue_id: venueId,
+        room_id: roomId || null,
+        collector_id: collectorId,
+        critical,
+        enabled,
+        metadata,
+      });
 
-    setSaving(false);
-    if ("error" in result && result.error) {
-      setError(result.error);
-      return;
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
+
+      router.replace(`/app/devices/${id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setSaving(false);
     }
-
-    router.push(`/app/devices/${id}`);
-    router.refresh();
   }
 
   async function handleDisable() {
