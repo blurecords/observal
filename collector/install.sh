@@ -41,9 +41,16 @@ if [[ ! -f "$CONFIG_DIR/identity.json" ]]; then
   echo "         Run factory/preload-identity.py before shipping the device."
 fi
 
-chmod 700 "$CONFIG_DIR" "$DATA_DIR"
-chmod 600 "$CONFIG_DIR"/* 2>/dev/null || true
+chmod 700 "$DATA_DIR"
 chown -R "$OBSERVAL_USER:$OBSERVAL_USER" "$DATA_DIR"
+
+# Config readable by collector user, not world-readable
+chown root:"$OBSERVAL_USER" "$CONFIG_DIR"
+chmod 750 "$CONFIG_DIR"
+if compgen -G "$CONFIG_DIR/*" > /dev/null; then
+  chown root:"$OBSERVAL_USER" "$CONFIG_DIR"/*
+  chmod 640 "$CONFIG_DIR"/*
+fi
 
 echo "==> systemd"
 cp "$REPO_DIR/collector/systemd/observal-collector.service" /etc/systemd/system/
@@ -54,5 +61,8 @@ echo ""
 echo "Installation complete."
 echo "  1. Set SUPABASE_URL in $CONFIG_DIR/observal.env"
 echo "  2. Place identity.json in $CONFIG_DIR/identity.json (from factory)"
-echo "  3. sudo systemctl start observal-collector"
-echo "  4. sudo journalctl -u observal-collector -f"
+echo "  3. Fix permissions after copying identity:"
+echo "       sudo chown root:$OBSERVAL_USER $CONFIG_DIR $CONFIG_DIR/*"
+echo "       sudo chmod 750 $CONFIG_DIR && sudo chmod 640 $CONFIG_DIR/*"
+echo "  4. sudo systemctl start observal-collector"
+echo "  5. sudo journalctl -u observal-collector -f"

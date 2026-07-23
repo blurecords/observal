@@ -19,6 +19,7 @@ SyslogIdentifier=observal-collector
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
+ReadOnlyPaths=/etc/observal
 ReadWritePaths=/var/lib/observal
 PrivateTmp=true
 
